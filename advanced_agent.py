@@ -29,6 +29,9 @@ class AdvancedAgent(BatchedAgent):
         self.stepNum = []
         for x in range(num_envs):
             self.stepNum.append(0)
+        self.state = []
+        for x in range(num_envs):
+            self.state.append([0,0,0,0,0,0,0,0,0,0])
         
         # useful for actions that take place over multiple turns
         # (message prompts, actions that need confirmation)
@@ -78,7 +81,7 @@ class AdvancedAgent(BatchedAgent):
                     print(line)
                 print("\n\n")
             if actions[x] == -1:
-                actions[x], self.queue[x] = self.choose_action(self.map[x], observations[x], rewards[x], dones[x], infos[x])
+                actions[x], self.queue[x] = self.choose_action(self.map[x], observations[x], rewards[x], dones[x], infos[x], self.state[x])
         return actions
     
     def handle_queue(self, dones):
@@ -88,6 +91,7 @@ class AdvancedAgent(BatchedAgent):
                 # Run over, reset the notebook for the next run
                 self.lastFloor[x] = 1
                 self.stepNum[x] = 0
+                self.state[x] = [0,0,0,0,0,0,0,0,0,0]
                 self.queue[x] = ""
                 if CONST_SHOW_MAP_ON_DEATH:
                     # print the recorded map for debug purposes
@@ -196,7 +200,7 @@ class AdvancedAgent(BatchedAgent):
                     map[x][y] = "."
         return map
     
-    def choose_action(self, dmap, observations, rewards, dones, infos):
+    def choose_action(self, dmap, observations, rewards, dones, infos, state):
         message = observations["message"]
         parsedMessage = bytes(message).decode('ascii').replace('\0','')
         screen = observations["tty_chars"]
@@ -292,7 +296,7 @@ class AdvancedAgent(BatchedAgent):
         # Or, if the stairs are nearer than anywhere new, just go for the stairs
         action, queue, target = self.explore(dmap[dlvl], heroRow, heroCol, ["?",">"])
         if action != -1:
-            
+            state[0] = 0 # reset desperation level to zero
         
         # TODO: Kill monsters, because maybe one of them is sitting on the stairs
         
