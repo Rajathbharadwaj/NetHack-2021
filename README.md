@@ -20,9 +20,6 @@ Automate the end-to-end trading using zerodha platfom using some indicators depe
 ### In Progress :pick:	
 
 - Working on creating a player using path finding algorithms (SSSP, ASSP etc) :boom:
-- Fixing why it buys with a delay using some profilers :writing_hand:
-- Creating a UI/UX friendly design to see the status of the trade :memo:
-- (if Needed) - Create a local API with Kite to easy of handling and DRY :unlock:
 
 ### Done :heavy_check_mark:	
 	
