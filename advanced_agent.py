@@ -8,6 +8,7 @@ CONST_TREAT_UNKNOWN_AS_PASSIBLE = True
 CONST_MAP_STATUS_FREQUENCY = 1000
 CONST_SHOW_MAP_ON_DEATH = False
 CONST_SHOW_MAP_ON_PANIC = True
+CONST_DESPERATION_THRESHOLD = 30 # Agent will panic if its desperation reaches this value
 
 
 # Here's a compass, just for reference...
@@ -57,6 +58,19 @@ class AdvancedAgent(BatchedAgent):
                 dungeon.append(floor)
             self.map.append(dungeon)
         
+        self.searched = []
+        for i in range(num_envs):
+            dungeon = []
+            for j in range(30):
+                floor = []
+                for k in range(21):
+                    row = []
+                    for l in range(79):
+                        row.append(0) # Any number means "searched # times"
+                    floor.append(row)
+                dungeon.append(floor)
+            self.searched.append(dungeon)
+        
     def batched_step(self, observations, rewards, dones, infos):
         """
         Perform a batched step on lists of environment outputs.
@@ -67,7 +81,10 @@ class AdvancedAgent(BatchedAgent):
         actions = self.handle_queue(dones)
         for x in range(self.num_envs):
             dlvl = observations[x]["blstats"][12]-1
-            self.map[x][dlvl] = self.update_map(self.lastFloor[x], observations[x], self.map[x][dlvl])
+            if self.state[x][1] == 1:
+                self.map[x][dlvl], self.searched[x][dlvl] = self.update_map(self.lastFloor[x], observations[x], self.map[x][dlvl], self.searched[x][dlvl])
+            else:
+                self.map[x][dlvl], trashcan = self.update_map(self.lastFloor[x], observations[x], self.map[x][dlvl])
             self.lastFloor[x] = dlvl+1
             self.stepNum[x] += 1
             #if dones[x]:
@@ -82,7 +99,19 @@ class AdvancedAgent(BatchedAgent):
                     print(line)
                 print("\n\n")
             if actions[x] == -1:
-                actions[x], self.queue[x] = self.choose_action(self.map[x], observations[x], rewards[x], dones[x], infos[x], self.state[x])
+                actions[x], self.queue[x], self.state[x] = self.choose_action(self.map[x], observations[x], rewards[x], dones[x], infos[x], self.state[x], self.searched[x])
+            if self.state[x][1] == 1 or (len(self.queue[x]) > 0 and self.queue[x][0] == 's'):
+                # update the searched map
+                self.state[x][1] = 0
+                y = observations[x]["blstats"][1]-1
+                z = observations[x]["blstats"][0]-1
+                while y <= observations[x]["blstats"][1]+1:
+                    while z <= observations[x]["blstats"][0]+1:
+                        if(y >= 0 and y < 21 and z >= 0 and z < 79):
+                            self.searched[x][dlvl][y][z] += 1
+                        z += 1
+                    y += 1
+                            
         return actions
     
     def handle_queue(self, dones):
@@ -113,7 +142,17 @@ class AdvancedAgent(BatchedAgent):
                             row.append("?") # ? means "unexplored"
                         floor.append(row)
                     dungeon.append(floor)
-                self.map[x] = dungeon
+                self.map[x] = dungeon                
+                dungeon = []
+                for i in range(30):
+                    floor = []
+                    for j in range(21):
+                        row = []
+                        for k in range(79):
+                            row.append(0) # Any number means "searched # times"
+                        floor.append(row)
+                    dungeon.append(floor)
+                self.searched[x] = dungeon
                 actions.append(-1)
                 continue
             if self.queue[x] == "":
@@ -123,7 +162,7 @@ class AdvancedAgent(BatchedAgent):
                 self.queue[x] = self.queue[x][1:] # pop the character we just handled from the queue
         return actions
     
-    def update_map(self, lastFloor, observations, map):
+    def update_map(self, lastFloor, observations, map, searched=[]):
         # Runs once per step (per active environment)
         # Feed in your current map and the observation suite the environment gives you
         # This function will return an updated map
@@ -134,9 +173,11 @@ class AdvancedAgent(BatchedAgent):
         
         message = observations["message"]
         parsedMessage = bytes(message).decode('ascii').replace('\0','')
+        heroRow = observations["blstats"][1]
+        heroCol = observations["blstats"][0]
         
         descendMessage = "You descend the stairs." # Length 23
-        cannotMessage = "You cannot " # Length 10
+        cannotMessage = "You cannot" # Length 10
         lockedMessage = "This door is locked." # Length 20
         boulderMessage = "You try to move the boulder, but in vain." # Length 28
         unlockedMessage = "You succeed in picking the lock." # Length 32
@@ -150,7 +191,7 @@ class AdvancedAgent(BatchedAgent):
         if observations["blstats"][12] != lastFloor:
             print("Now entering floor ", end="")
             print(observations["blstats"][12])
-            return map # don't update the map on the step you change floor, the NLE observation is wack on that step
+            return map, searched # don't update the map on the step you change floor, the NLE observation is wack on that step
         screen = observations["chars"]
         for x in range(21):
             for y in range(79):
@@ -199,9 +240,29 @@ class AdvancedAgent(BatchedAgent):
                     continue
                 if map[x][y] != ">" and map[x][y] != "+": # open space, possibly with something in it that isn't as stalwart as a wall
                     map[x][y] = "."
-        return map
+
+        if searched != []:
+            # we're searching, so let's update our map accordingly
+            searched[heroRow][heroCol] += 1
+            if heroRow < 21:
+                searched[heroRow+1][heroCol] += 1
+            if heroCol < 79:
+                searched[heroRow][heroCol+1] += 1
+            if heroRow > 0:
+                searched[heroRow-1][heroCol] += 1
+            if heroCol > 0:
+                searched[heroRow][heroCol-1] += 1
+            if heroRow > 0 and heroCol > 0:
+                searched[heroRow+1][heroCol+1] += 1
+            if heroRow > 0 and heroCol < 79:
+                searched[heroRow+1][heroCol-1] += 1
+            if heroRow < 21 and heroCol > 0:
+                searched[heroRow-1][heroCol+1] += 1
+            if heroRow < 21 and heroCol > 79:
+                searched[heroRow-1][heroCol-1] += 1
+        return map, searched
     
-    def choose_action(self, dmap, observations, rewards, dones, infos, state):
+    def choose_action(self, dmap, observations, rewards, dones, infos, state, searched):
         message = observations["message"]
         parsedMessage = bytes(message).decode('ascii').replace('\0','')
         screen = observations["tty_chars"]
@@ -218,20 +279,20 @@ class AdvancedAgent(BatchedAgent):
         
         # If the game is waiting for the player to press enter, press enter
         if observations["misc"][2]:
-            return 19, ""
+            return 19, "", state
         # If the game is waiting for a y/n prompt, answer y.
         if observations["misc"][0]:
             if parsedMessage[:14] == shouldntMessage and message[14] >= 65 and message[14] <= 90:
-                return 5, "" # ...Unless we're about to attack a character with a capitalized name.
-                             # Most likely it's a shopkeeper, but honestly...
-                             # ...anything capitalized you're asked to confirm is probably gonna murder you.
-            return 7, ""
+                return 5, "", state # ...Unless we're about to attack a character with a capitalized name.
+                                    # Most likely it's a shopkeeper, but honestly...
+                                    # ...anything capitalized you're asked to confirm is probably gonna murder you.
+            return 7, "", state
         # If the game is waiting for a text prompt, just press enter and ask for the default for now.
         if observations["misc"][1]:
-            return 19, ""
+            return 19, "", state
         # If the hero is on the stairs, descend the stairs.
         if dmap[dlvl][heroRow][heroCol] == ">":
-            return 17, ""
+            return 17, "", state
         
         # TODO: Check for emergencies.
             # If you're critically low on HP, heal.
@@ -241,25 +302,25 @@ class AdvancedAgent(BatchedAgent):
             # If your intelligence is 3 (putting you at risk of brainlessness), restore it.
             # etc, etc
         
-        # TODO: If there's a monster immediately adjacent to you, fight it so it doesn't just nibble on you
+        # If there's a monster immediately adjacent to you, fight it so it doesn't just nibble on you
             # (Floating eyes, among other things, are to be ignored at this step.)
         
         if heroRow > 0 and dmap[dlvl][heroRow-1][heroCol] == "&":
-            return 40, "k" # north
+            return 40, "k", state # north
         if heroRow < 21 and dmap[dlvl][heroRow+1][heroCol] == "&":
-            return 40, "j" # south
+            return 40, "j", state # south
         if heroCol > 0 and dmap[dlvl][heroRow][heroCol-1] == "&":
-            return 40, "h" # west
+            return 40, "h", state # west
         if heroCol < 79 and dmap[dlvl][heroRow][heroCol+1] == "&":
-            return 40, "l" # east
+            return 40, "l", state # east
         if heroRow > 0 and heroCol > 0 and dmap[dlvl][heroRow-1][heroCol-1] == "&":
-            return 40, "y" # northwest
+            return 40, "y", state # northwest
         if heroRow < 21 and heroCol > 0 and dmap[dlvl][heroRow+1][heroCol-1] == "&":
-            return 40, "b" # southwest
+            return 40, "b", state # southwest
         if heroRow > 0 and heroCol < 79 and dmap[dlvl][heroRow-1][heroCol+1] == "&":
-            return 40, "u" # northeast
+            return 40, "u", state # northeast
         if heroRow < 21 and heroCol < 79 and dmap[dlvl][heroRow+1][heroCol+1] == "&":
-            return 40, "n" # southeast
+            return 40, "n", state # southeast
         
         
         # TODO: Evaluate your current condition – heal if appropriate, eat if you're hungry, etc.
@@ -277,27 +338,28 @@ class AdvancedAgent(BatchedAgent):
             if handyLockpick != None:
                 # Oooooh, we do indeed have a door-opener to work with. Let's see where around us the door is and start picking.
                 if heroRow > 0 and dmap[dlvl][heroRow-1][heroCol] == "+":
-                    return 24, handyLockpick+"k" # north
+                    return 24, handyLockpick+"k", state # north
                 if heroRow < 21 and dmap[dlvl][heroRow+1][heroCol] == "+":
-                    return 24, handyLockpick+"j" # south
+                    return 24, handyLockpick+"j", state # south
                 if heroCol > 0 and dmap[dlvl][heroRow][heroCol-1] == "+":
-                    return 24, handyLockpick+"h" # west
+                    return 24, handyLockpick+"h", state # west
                 if heroCol < 79 and dmap[dlvl][heroRow][heroCol+1] == "+":
-                    return 24, handyLockpick+"l" # east
+                    return 24, handyLockpick+"l", state # east
                 if heroRow > 0 and heroCol > 0 and dmap[dlvl][heroRow-1][heroCol-1] == "+":
-                    return 24, handyLockpick+"y" # northwest
+                    return 24, handyLockpick+"y", state # northwest
                 if heroRow < 21 and heroCol > 0 and dmap[dlvl][heroRow+1][heroCol-1] == "+":
-                    return 24, handyLockpick+"b" # southwest
+                    return 24, handyLockpick+"b", state # southwest
                 if heroRow > 0 and heroCol < 79 and dmap[dlvl][heroRow-1][heroCol+1] == "+":
-                    return 24, handyLockpick+"u" # northeast
+                    return 24, handyLockpick+"u", state # northeast
                 if heroRow < 21 and heroCol < 79 and dmap[dlvl][heroRow+1][heroCol+1] == "+":
-                    return 24, handyLockpick+"n" # southeast
+                    return 24, handyLockpick+"n", state # southeast
         
         # Look for somewhere on the map we haven't been close enough yet to label, aim there
         # Or, if the stairs are nearer than anywhere new, just go for the stairs
         action, queue, target = self.explore(dmap[dlvl], heroRow, heroCol, ["?",">"])
         if action != -1:
             state[0] = 0 # reset desperation level to zero
+            return action, queue, state
         
         # TODO: Kill monsters, because maybe one of them is sitting on the stairs
         
@@ -308,10 +370,20 @@ class AdvancedAgent(BatchedAgent):
         # TODO: Huh. Do we have Stone to Flesh? Maybe we can magic away a boulder to open up a new area.
             # Hm. We don't want to waste our energy converting a boulder that isn't actually blocking anyting.
         
-        # TODO: Let's look for secret doors. Sometimes that's the only way to reach the stairs.
-            # Upon further analysis, this is probably the TODO with the highest priority. TODO, TODO, TODO.
+        # Let's look for secret doors. Sometimes that's the only way to reach the stairs.
             # Not only is it actually pretty common for hidden passages to be the only way forward,
             # but also, hidden passages can very often remove the need to interact with boulders or diagonal passageways.
+        if action == -1 and state[0] < 3:
+            state[0] = 3 # start out searching each wall within 3 moves 3 tiles each
+        
+        while action == -1 and state[0] < CONST_DESPERATION_THRESHOLD:
+            action, queue = self.gropeForDoors(dmap[dlvl], searched[dlvl], heroRow, heroCol, state[0])
+            if action == -1:
+                state[0] += 1
+        
+        if action == 75:
+            # we're about to search, so let's make a note to update the searched array
+            state[1] = 1
         
         # TODO: Did one of the boulders say we couldn't push it because there was a monster on the other side? Let's wait it out.
             # Alternatively, if Stone to Flesh would be useful if only we had the energy for it, we can wait for our energy to refill.
@@ -327,7 +399,7 @@ class AdvancedAgent(BatchedAgent):
             print("Floor panicked on: ", end="")
             print(dlvl+1)
             if not CONST_SHOW_MAP_ON_PANIC:
-                return 65, "y" # just skip straight to sending the order to quit the game
+                return 65, "y", queue # just skip straight to sending the order to quit the game
             for y in range(21):
                 line = ""
                 for z in range(79):
@@ -343,8 +415,8 @@ class AdvancedAgent(BatchedAgent):
                 #for y in range(79):
                     #print(observations["chars"][x][y],end=" ")
                 #print("\n")
-            return 65, "y"
-        return action, queue
+            return 65, "y", state
+        return action, queue, state
     
     def isMapIconPassable(self, char):
         # chars correspond to our rendered map, not the raw observation table
@@ -370,18 +442,18 @@ class AdvancedAgent(BatchedAgent):
             return True
         if char == "~": # A shopkeeper, or other peaceful that doesn't merit messing with
             return False
+        if char == "^": # A trap of some sort, better off avoided
+            return False
         # Update me as needed!
     
     def explore(self, map, row, col, target):
         # Uses Dijkstra's algorithm to get to the nearest space that's marked as one of the items in target
         # TODO: Fix the fact that this function has the brain of a gridbug (doesn't move diagonally)
-        # TODO: We don't actually use the "reachable in # moves" variable for anything, get rid of it
         
         if target.count(map[row][col]) > 0:
             # you idiot, you're standing on the thing you're looking for! aidsfdsjaflnjdsk
             return -1, "", map[row][col]
         
-        reachable = []
         investigated = []
         queue = []
         howToReach = []
@@ -390,26 +462,22 @@ class AdvancedAgent(BatchedAgent):
             rowArray = []
             reachRowArray = []
             for k in range(79):
-                rowArray.append(-1) 
+                rowArray.append(False) 
                 reachRowArray.append("")
-            reachable.append(rowArray) # -1 means "unreachable", other # means "reachable in # moves"
-            investigated.append(rowArray.copy()) # -1 means "uninvestigated", other # means "investigated"
+            investigated.append(rowArray)
             howToReach.append(reachRowArray) # what moves can take you to this space
-            
-        reachable[row][col] = 0
+        
         queue.append([row, col])
         
         while len(queue) > 0:
             currRow = queue[0][0]
             currCol = queue[0][1]
             queue = queue[1:] # pop the element at the front of the queue since we're looking at it now
-            if investigated[currRow][currCol] == -1: # don't investigate the same space twice, that's inefficient
-                                                      # if this path was faster we'd have investigated it before the other path
+            if not investigated[currRow][currCol]: # don't investigate the same space twice, that's inefficient
+                                                   # if this path was faster we'd have investigated it before the other path
                 currSymbol = map[currRow][currCol]
-                investigated[currRow][currCol] = 1
+                investigated[currRow][currCol] = True
                 
-        
-                currDistance = reachable[currRow][currCol]
                 
                 # check south
                 if currRow < 20 and target.count(map[currRow+1][currCol]) > 0:
@@ -423,8 +491,7 @@ class AdvancedAgent(BatchedAgent):
                         # and in either case definitely remove the first instruction; we'll do it seperately and queue the others
                     return firstAction, pathFound, map[currRow+1][currCol]
                 if currRow < 20 and self.isMapIconPassable(map[currRow+1][currCol]):
-                    if reachable[currRow+1][currCol] == -1:
-                        reachable[currRow+1][currCol] = currDistance+1
+                    if howToReach[currRow+1][currCol] == "" and not investigated[currRow+1][currCol]:
                         queue.append([currRow+1,currCol])
                         howToReach[currRow+1][currCol] = howToReach[currRow][currCol] + "j"
                         
@@ -440,8 +507,7 @@ class AdvancedAgent(BatchedAgent):
                         # and in either case definitely remove the first instruction; we'll do it seperately and queue the others
                     return firstAction, pathFound, map[currRow][currCol+1]
                 if currCol < 79 and self.isMapIconPassable(map[currRow][currCol+1]):
-                    if reachable[currRow][currCol+1] == -1:
-                        reachable[currRow][currCol+1] = currDistance+1
+                    if howToReach[currRow][currCol+1] == "" and not investigated[currRow][currCol+1]:
                         queue.append([currRow,currCol+1])
                         howToReach[currRow][currCol+1] = howToReach[currRow][currCol] + "l"
                         
@@ -457,8 +523,7 @@ class AdvancedAgent(BatchedAgent):
                         # and in either case definitely remove the first instruction; we'll do it seperately and queue the others
                     return firstAction, pathFound, map[currRow-1][currCol]
                 if currRow > 0 and self.isMapIconPassable(map[currRow-1][currCol]):
-                    if reachable[currRow-1][currCol] == -1:
-                        reachable[currRow-1][currCol] = currDistance+1
+                    if howToReach[currRow-1][currCol] == "" and not investigated[currRow-1][currCol]:
                         queue.append([currRow-1,currCol])
                         howToReach[currRow-1][currCol] = howToReach[currRow][currCol] + "k"
 
@@ -474,8 +539,7 @@ class AdvancedAgent(BatchedAgent):
                         # and in either case definitely remove the first instruction; we'll do it seperately and queue the others
                     return firstAction, pathFound, map[currRow][currCol-1]
                 if currCol > 0 and self.isMapIconPassable(map[currRow][currCol-1]):
-                    if reachable[currRow][currCol-1] == -1:
-                        reachable[currRow][currCol-1] = currDistance+1
+                    if howToReach[currRow][currCol-1] == "" and not investigated[currRow][currCol-1]:
                         queue.append([currRow,currCol-1])
                         howToReach[currRow][currCol-1] = howToReach[currRow][currCol] + "h"
         # if we're here, there's no reachable target on this floor
@@ -490,3 +554,82 @@ class AdvancedAgent(BatchedAgent):
                 if observations["inv_glyphs"][x] == y:
                     return observations["inv_letters"][x], y
         return None, None
+    
+    def gropeForDoors(self, map, searched, row, col, desperation):
+        # Similar to "explore" – not entirely, though
+        # We're looking for a nearby wall we can search for secret doors
+        # As "desperation" increases, we consider farther-away walls, and search more times
+        # Desperation being # means search each wall within # moves # times each
+        investigated = []
+        queue = []
+        howToReach = []
+        
+        for j in range(21):
+            rowArray = []
+            reachRowArray = []
+            for k in range(79):
+                rowArray.append(False) 
+                reachRowArray.append("")
+            investigated.append(rowArray) # -1 means "uninvestigated", other # means "investigated"
+            howToReach.append(reachRowArray) # what moves can take you to this space
+            
+        queue.append([row, col])
+        
+        while len(queue) > 0:
+            currRow = queue[0][0]
+            currCol = queue[0][1]
+            queue = queue[1:] # pop the element at the front of the queue since we're looking at it now
+            if investigated[currRow][currCol] == False: # don't investigate the same space twice, that's inefficient
+                                                      # if this path was faster we'd have investigated it before the other path
+                if len(howToReach[currRow][currCol]) > desperation:
+                    return -1, "" # We investigate paths in ascending order of length. This one's already too long, so we're done
+                currSymbol = map[currRow][currCol]
+                investigated[currRow][currCol] = True
+            
+                # check south
+                if currRow < 20 and map[currRow+1][currCol] == "X" and searched[currRow+1][currCol] < desperation:
+                    pathFound = howToReach[currRow][currCol] + "s"
+                    firstAction = keyLookup[pathFound[0]]
+                    pathFound = pathFound[1:] # Remove the first instruction; we'll do it seperately and queue the others
+                    return firstAction, pathFound
+                if currRow < 20 and self.isMapIconPassable(map[currRow+1][currCol]):
+                    if howToReach[currRow+1][currCol] == "" and not investigated[currRow+1][currCol]:
+                        queue.append([currRow+1,currCol])
+                        howToReach[currRow+1][currCol] = howToReach[currRow][currCol] + "j"
+                        
+                # check east
+                if currCol < 79 and map[currRow][currCol+1] == "X" and searched[currRow][currCol+1] < desperation:
+                    pathFound = howToReach[currRow][currCol] + "s"
+                    firstAction = keyLookup[pathFound[0]]
+                    pathFound = pathFound[1:] # Remove the first instruction; we'll do it seperately and queue the others
+                    return firstAction, pathFound
+                if currCol < 79 and self.isMapIconPassable(map[currRow][currCol+1]):
+                    if howToReach[currRow][currCol+1] == "" and not investigated[currRow][currCol+1]:
+                        queue.append([currRow,currCol+1])
+                        howToReach[currRow][currCol+1] = howToReach[currRow][currCol] + "l"
+                        
+                # check north
+                if currRow > 0 and map[currRow-1][currCol] == "X" and searched[currRow-1][currCol] < desperation:
+                    pathFound = howToReach[currRow][currCol] + "s"
+                    firstAction = keyLookup[pathFound[0]]
+                    pathFound = pathFound[1:] # Remove the first instruction; we'll do it seperately and queue the others
+                    return firstAction, pathFound
+                if currRow > 0 and self.isMapIconPassable(map[currRow-1][currCol]):
+                    if howToReach[currRow-1][currCol] == "" and not investigated[currRow-1][currCol]:
+                        queue.append([currRow-1,currCol])
+                        howToReach[currRow-1][currCol] = howToReach[currRow][currCol] + "k"
+                        
+                # check west
+                if currCol > 0 and map[currRow][currCol-1] == "X" and searched[currRow][currCol-1] < desperation:
+                    pathFound = howToReach[currRow][currCol] + "s"
+                    firstAction = keyLookup[pathFound[0]]
+                    pathFound = pathFound[1:] # Remove the first instruction; we'll do it seperately and queue the others
+                    return firstAction, pathFound
+                if currCol > 0 and self.isMapIconPassable(map[currRow][currCol-1]):
+                    if howToReach[currRow][currCol-1] == "" and not investigated[currRow][currCol-1]:
+                        queue.append([currRow,currCol-1])
+                        howToReach[currRow][currCol-1] = howToReach[currRow][currCol] + "h"
+        # if we're here, there's no suitable target within range
+        # what happens next is not this function's responsibility to decide
+        # (but it'll probably involve running the function again with a higher desperation value)
+        return -1, ""
