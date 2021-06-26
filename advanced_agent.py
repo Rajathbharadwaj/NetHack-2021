@@ -7,6 +7,7 @@ from agents.base import BatchedAgent
 CONST_TREAT_UNKNOWN_AS_PASSIBLE = True
 CONST_MAP_STATUS_FREQUENCY = 1000
 CONST_SHOW_MAP_ON_DEATH = False
+CONST_SHOW_MAP_ON_PANIC = True
 
 
 # Here's a compass, just for reference...
@@ -325,7 +326,8 @@ class AdvancedAgent(BatchedAgent):
             print("Agent has panicked! (Its logic gives it no move to make.)")
             print("Floor panicked on: ", end="")
             print(dlvl+1)
-            
+            if not CONST_SHOW_MAP_ON_PANIC:
+                return 65, "y" # just skip straight to sending the order to quit the game
             for y in range(21):
                 line = ""
                 for z in range(79):
