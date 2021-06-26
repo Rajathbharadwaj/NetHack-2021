@@ -4,8 +4,7 @@
 # AIM
 Designing an agent which can navigate the procedurally generated, ascii dungeons of Nethack  :trophy: 
 
-# Objectives :basecamp:	
-Automate the end-to-end trading using zerodha platfom using some indicators depending on the stock or options
+
 
 ### Todos (Feel free to add if you feel anything is missing):heavy_plus_sign:	
 
