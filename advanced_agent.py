@@ -104,8 +104,8 @@ class AdvancedAgent(BatchedAgent):
                 # update the searched map
                 self.state[x][1] = 0
                 y = observations[x]["blstats"][1]-1
-                z = observations[x]["blstats"][0]-1
                 while y <= observations[x]["blstats"][1]+1:
+                    z = observations[x]["blstats"][0]-1
                     while z <= observations[x]["blstats"][0]+1:
                         if(y >= 0 and y < 21 and z >= 0 and z < 79):
                             self.searched[x][dlvl][y][z] += 1
@@ -307,23 +307,28 @@ class AdvancedAgent(BatchedAgent):
         
         if heroRow > 0 and dmap[dlvl][heroRow-1][heroCol] == "&":
             return 40, "k", state # north
-        if heroRow < 21 and dmap[dlvl][heroRow+1][heroCol] == "&":
+        if heroRow < 20 and dmap[dlvl][heroRow+1][heroCol] == "&":
             return 40, "j", state # south
         if heroCol > 0 and dmap[dlvl][heroRow][heroCol-1] == "&":
             return 40, "h", state # west
-        if heroCol < 79 and dmap[dlvl][heroRow][heroCol+1] == "&":
+        if heroCol < 78 and dmap[dlvl][heroRow][heroCol+1] == "&":
             return 40, "l", state # east
         if heroRow > 0 and heroCol > 0 and dmap[dlvl][heroRow-1][heroCol-1] == "&":
             return 40, "y", state # northwest
-        if heroRow < 21 and heroCol > 0 and dmap[dlvl][heroRow+1][heroCol-1] == "&":
+        if heroRow < 20 and heroCol > 0 and dmap[dlvl][heroRow+1][heroCol-1] == "&":
             return 40, "b", state # southwest
-        if heroRow > 0 and heroCol < 79 and dmap[dlvl][heroRow-1][heroCol+1] == "&":
+        if heroRow > 0 and heroCol < 78 and dmap[dlvl][heroRow-1][heroCol+1] == "&":
             return 40, "u", state # northeast
-        if heroRow < 21 and heroCol < 79 and dmap[dlvl][heroRow+1][heroCol+1] == "&":
+        if heroRow < 20 and heroCol < 78 and dmap[dlvl][heroRow+1][heroCol+1] == "&":
             return 40, "n", state # southeast
         
         
         # TODO: Evaluate your current condition – heal if appropriate, eat if you're hungry, etc.
+        if observations["blstats"][21] > 1:
+            # Hero is hungry. Eat food!
+            comestible, trashcan = self.searchInventory(observations, permafood)
+            if comestible != None:
+                return 35, chr(comestible), state
         
         # TODO: If there's a floating eye immediately adjacent to you, see if you have a blindfold or towel handy.
         
