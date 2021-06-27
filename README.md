@@ -25,7 +25,7 @@ Designing an agent which can navigate the procedurally generated, ascii dungeons
 * Not done
 ### Gotchas
 
-- Figure out how to deal with secret passage :black_small_square: :small_red_triangle_down:	
+- Figure out how to deal with secret passage (Tentatively dealt with!) :black_small_square: :small_red_triangle_down:	 
 
 
 ### Algorithms (Add picture)
