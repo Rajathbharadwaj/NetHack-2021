@@ -8,7 +8,7 @@ CONST_TREAT_UNKNOWN_AS_PASSIBLE = True
 CONST_MAP_STATUS_FREQUENCY = 1000
 CONST_SHOW_MAP_ON_DEATH = False
 CONST_SHOW_MAP_ON_PANIC = True
-CONST_DESPERATION_THRESHOLD = 30 # Agent will panic if its desperation reaches this value
+CONST_DESPERATION_THRESHOLD = 30 # Agent will panic if its desperation exceeds this value
 
 
 # Here's a compass, just for reference...
@@ -230,15 +230,53 @@ class AdvancedAgent(BatchedAgent):
                 if x == observations["blstats"][1] and y == observations["blstats"][0]:
                     map[x][y] = "@"
                     continue
+                if observations["chars"][x][y] != 35 and observations["glyphs"][x][y] != 267:
+                    if x < 20 and map[x+1][y] == "s":
+                        map[x][y] = "s"
+                        continue
+                    if y < 78 and map[x][y+1] == "s":
+                        map[x][y] = "s"
+                        continue
+                    if x > 0 and map[x-1][y] == "s":
+                        map[x][y] = "s"
+                        continue
+                    if y > 0 and map[x][y-1] == "s":
+                        map[x][y] = "s"
+                        continue
+                if observations["glyphs"][x][y] >= 1907 and observations["glyphs"][x][y] <= 2352:
+                    # Potential loot!
+                    # (We could treat corpse glyphs as part of this category...
+                    # corpses aren't too often worth lugging around, but they sometimes have items,
+                    # and can be tinned with a tinning kit)
+                    if map[x][y] == "s":
+                        continue
+                    if map[x][y] == "@":
+                        map[x][y] = "-"
+                    else:
+                        map[x][y] = "$"
+                    continue
                 if observations["glyphs"][x][y] <= 380:
                     if hesitate and abs(observations["blstats"][1] - x) <= 1 and abs(observations["blstats"][0] - y) <= 1:
                         map[x][y] = "~"
+                        continue
+                    if observations["glyphs"][x][y] == 267:
+                        # this incorrectly marks tiles as shop if the shopkeeper was generated from stone-to-flesh on a wished-for shopkeeper statue
+                        # so uhhh
+                        # don't do that
+                        map[x][y] = "~"
+                        map = self.markShopOnMap(map, x, y)
+                        continue
                     map[x][y] = "&"
                     # We could add a failsafe that marks *all* monsters that yield the "Really attack the X?" message as peacefuls
                     # That would however cause major issues with peacefuls that don't stay in one place
                     # Besides, peacefuls can be killed with only minor issues, but attacking a shopkeeper is basically always YASD
+                    
+                    # Come to think of it, is there an easy way to tell if a monster is peaceful?
                     continue
-                if map[x][y] != ">" and map[x][y] != "+": # open space, possibly with something in it that isn't as stalwart as a wall
+                if observations["chars"][x][y] == 35:
+                    map[x][y] = ","
+                    continue
+                if map[x][y] != ">" and map[x][y] != "+" and map[x][y] != "s": # open space, possibly with something in it that isn't as stalwart as a wall
                     map[x][y] = "."
 
         if searched != []:
@@ -272,8 +310,14 @@ class AdvancedAgent(BatchedAgent):
         handyLockpick = self.searchInventory(observations, lockpicks)[0]
         if handyLockpick != None:
             handyLockpick = chr(handyLockpick)
-        lockedMessage = "This door is locked."
+        lockedMessage = "This door is locked." # Length 20
         shouldntMessage = "Really attack " # Length 14
+        lootMessage = "You see here" # Length 11
+        moreLootMessage = "Things:" # Length 7
+        #if parsedMessage[:11] == lootMessage:
+            x = 1 # break here so we know how this message is formatted
+        #if parsedMessage[:7] == moreLootMessage:
+            x = 1 # break here so we know how this message is formatted
         
         # Agent Name: Savvy Dungeoneer – Has a list of priorities he checks in order
         
@@ -364,7 +408,7 @@ class AdvancedAgent(BatchedAgent):
         action, queue, target = self.explore(dmap[dlvl], heroRow, heroCol, ["?",">"])
         if action != -1:
             state[0] = 0 # reset desperation level to zero
-            return action, queue, state
+            return action, "", state
         
         # TODO: Kill monsters, because maybe one of them is sitting on the stairs
         
@@ -381,10 +425,10 @@ class AdvancedAgent(BatchedAgent):
         if action == -1 and state[0] < 3:
             state[0] = 3 # start out searching each wall within 3 moves 3 tiles each
         
-        while action == -1 and state[0] < CONST_DESPERATION_THRESHOLD:
+        while action == -1 and state[0] <= CONST_DESPERATION_THRESHOLD:
             action, queue = self.gropeForDoors(dmap[dlvl], searched[dlvl], heroRow, heroCol, state[0])
             if action == -1:
-                state[0] += 1
+                state[0] += 3
         
         if action == 75:
             # we're about to search, so let's make a note to update the searched array
@@ -424,9 +468,12 @@ class AdvancedAgent(BatchedAgent):
         return action, queue, state
     
     def isMapIconPassable(self, char):
+        # TODO: Turn this into a dictionary, so we can change what we treat as passable if need be
         # chars correspond to our rendered map, not the raw observation table
         if char == ".": # Empty space, which may contain something we don't yet have a response for
             return True
+        if char == ",": # Empty space, which may contain something we don't yet have a response for
+            return True # This corresponds to dungeon corridor, which we track seperately to use as boundaries for shop turf
         if char == "?": # We haven't gotten close enough to this to see what it is
             return CONST_TREAT_UNKNOWN_AS_PASSIBLE
         if char == "X": # Wall
@@ -437,7 +484,7 @@ class AdvancedAgent(BatchedAgent):
             return False
         if char == "`": # boulder; too complicated to bother with for right now
             return False
-        if char == "#": # bars; corridor is rendered as "." on our map
+        if char == "#": # bars
             return False
         if char == "e": # floating eye; avoid!
             return False
@@ -449,6 +496,12 @@ class AdvancedAgent(BatchedAgent):
             return False
         if char == "^": # A trap of some sort, better off avoided
             return False
+        if char == "$": # Doesn't have to be money; can be any potentially useful item
+            return True
+        if char == "-": # We've seen what this is and decided not to take it; don't bother checking again
+            return True
+        if char == "s": # shop turf
+            return True
         # Update me as needed!
     
     def explore(self, map, row, col, target):
@@ -638,3 +691,18 @@ class AdvancedAgent(BatchedAgent):
         # what happens next is not this function's responsibility to decide
         # (but it'll probably involve running the function again with a higher desperation value)
         return -1, ""
+    
+    def markShopOnMap(self, map, row, col):
+        if row < 20 and (map[row+1][col] == "." or map[row+1][col] == "-" or map[row+1][col] == "$"):
+            map[row+1][col] = "s"
+            map = self.markShopOnMap(map, row+1, col)
+        if col < 78 and (map[row][col+1] == "." or map[row][col+1] == "-" or map[row][col+1] == "$"):
+            map[row][col+1] = "s"
+            map = self.markShopOnMap(map, row, col+1)
+        if row > 0 and (map[row-1][col] == "." or map[row-1][col] == "-" or map[row-1][col] == "$"):
+            map[row-1][col] = "s"
+            map = self.markShopOnMap(map, row-1, col)
+        if col > 0 and (map[row][col-1] == "." or map[row][col-1] == "-" or map[row][col-1] == "$"):
+            map[row][col-1] = "s"
+            map = self.markShopOnMap(map, row, col-1)
+        return map
