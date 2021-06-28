@@ -315,9 +315,9 @@ class AdvancedAgent(BatchedAgent):
         lootMessage = "You see here" # Length 11
         moreLootMessage = "Things:" # Length 7
         #if parsedMessage[:11] == lootMessage:
-            x = 1 # break here so we know how this message is formatted
+        #    x = 1 # break here so we know how this message is formatted
         #if parsedMessage[:7] == moreLootMessage:
-            x = 1 # break here so we know how this message is formatted
+        #    x = 1 # break here so we know how this message is formatted
         
         # Agent Name: Savvy Dungeoneer – Has a list of priorities he checks in order
         
