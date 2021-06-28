@@ -255,6 +255,14 @@ class AdvancedAgent(BatchedAgent):
                     else:
                         map[x][y] = "$"
                     continue
+                if observations["chars"][x][y] == 94: # trap
+                    map[x][y] = "^"
+                    continue
+                if observations["glyphs"][x][y] >= 1144 and observations["glyphs"][x][y] <= 1524 and (map[x][y] == "?" or map[x][y] == "^"):
+                    # corpse that was already there
+                    # very strong hint that there's some sort of trap
+                    map[x][y]
+                    continue
                 if observations["glyphs"][x][y] <= 380:
                     if hesitate and abs(observations["blstats"][1] - x) <= 1 and abs(observations["blstats"][0] - y) <= 1:
                         map[x][y] = "~"
@@ -276,7 +284,8 @@ class AdvancedAgent(BatchedAgent):
                 if observations["chars"][x][y] == 35:
                     map[x][y] = ","
                     continue
-                if map[x][y] != ">" and map[x][y] != "+" and map[x][y] != "s": # open space, possibly with something in it that isn't as stalwart as a wall
+                if map[x][y] != ">" and (observations["chars"][x][y] != 43 or map[x][y] != "+") and map[x][y] != "s":
+                    # open space, possibly with something in it that isn't as stalwart as a wall
                     map[x][y] = "."
 
         if searched != []:
@@ -313,7 +322,9 @@ class AdvancedAgent(BatchedAgent):
         lockedMessage = "This door is locked." # Length 20
         shouldntMessage = "Really attack " # Length 14
         lootMessage = "You see here" # Length 11
-        moreLootMessage = "Things:" # Length 7
+        moreLootMessage = "Things " # Length 7
+        bumLeftLegMessage = "Your left leg is in no shape for kicking."
+        bumRightLegMessage = "Your right leg is in no shape for kicking."
         #if parsedMessage[:11] == lootMessage:
         #    x = 1 # break here so we know how this message is formatted
         #if parsedMessage[:7] == moreLootMessage:
@@ -382,26 +393,25 @@ class AdvancedAgent(BatchedAgent):
         
         # TODO: Out of food? See if there's an edible monster nearby.
         
-        # If the hero has encountered a locked door, check if there's anything handy that could open it
-        if parsedMessage[:20] == lockedMessage:
-            if handyLockpick != None:
-                # Oooooh, we do indeed have a door-opener to work with. Let's see where around us the door is and start picking.
-                if heroRow > 0 and dmap[dlvl][heroRow-1][heroCol] == "+":
-                    return 24, handyLockpick+"k", state # north
-                if heroRow < 21 and dmap[dlvl][heroRow+1][heroCol] == "+":
-                    return 24, handyLockpick+"j", state # south
-                if heroCol > 0 and dmap[dlvl][heroRow][heroCol-1] == "+":
-                    return 24, handyLockpick+"h", state # west
-                if heroCol < 79 and dmap[dlvl][heroRow][heroCol+1] == "+":
-                    return 24, handyLockpick+"l", state # east
-                if heroRow > 0 and heroCol > 0 and dmap[dlvl][heroRow-1][heroCol-1] == "+":
-                    return 24, handyLockpick+"y", state # northwest
-                if heroRow < 21 and heroCol > 0 and dmap[dlvl][heroRow+1][heroCol-1] == "+":
-                    return 24, handyLockpick+"b", state # southwest
-                if heroRow > 0 and heroCol < 79 and dmap[dlvl][heroRow-1][heroCol+1] == "+":
-                    return 24, handyLockpick+"u", state # northeast
-                if heroRow < 21 and heroCol < 79 and dmap[dlvl][heroRow+1][heroCol+1] == "+":
-                    return 24, handyLockpick+"n", state # southeast
+        # See if we can make use of a lockpick or credit card
+        if handyLockpick != None:
+            # Oooooh, we do indeed have a door-opener to work with. Let's see if there's something to pick.
+            if heroRow > 0 and dmap[dlvl][heroRow-1][heroCol] == "+":
+                return 24, handyLockpick+"k", state # north
+            if heroRow < 21 and dmap[dlvl][heroRow+1][heroCol] == "+":
+                return 24, handyLockpick+"j", state # south
+            if heroCol > 0 and dmap[dlvl][heroRow][heroCol-1] == "+":
+                return 24, handyLockpick+"h", state # west
+            if heroCol < 79 and dmap[dlvl][heroRow][heroCol+1] == "+":
+                return 24, handyLockpick+"l", state # east
+            if heroRow > 0 and heroCol > 0 and dmap[dlvl][heroRow-1][heroCol-1] == "+":
+                return 24, handyLockpick+"y", state # northwest
+            if heroRow < 21 and heroCol > 0 and dmap[dlvl][heroRow+1][heroCol-1] == "+":
+                return 24, handyLockpick+"b", state # southwest
+            if heroRow > 0 and heroCol < 79 and dmap[dlvl][heroRow-1][heroCol+1] == "+":
+                return 24, handyLockpick+"u", state # northeast
+            if heroRow < 21 and heroCol < 79 and dmap[dlvl][heroRow+1][heroCol+1] == "+":
+                return 24, handyLockpick+"n", state # southeast
         
         # Look for somewhere on the map we haven't been close enough yet to label, aim there
         # Or, if the stairs are nearer than anywhere new, just go for the stairs
@@ -424,6 +434,43 @@ class AdvancedAgent(BatchedAgent):
             # but also, hidden passages can very often remove the need to interact with boulders or diagonal passageways.
         if action == -1 and state[0] < 3:
             state[0] = 3 # start out searching each wall within 3 moves 3 tiles each
+        
+        while action == -1 and state[0] <= 9:
+            action, queue = self.gropeForDoors(dmap[dlvl], searched[dlvl], heroRow, heroCol, state[0])
+            if action == -1:
+                state[0] += 3
+        
+        # TODO: Let's take a break from looking for secret doors to see if there's a door we can kick down.
+        # We don't want to do this willy-nilly (we could get hurt, or get fined by a shopkeeper) but sometimes it's necessary
+        
+        if parsedMessage == bumLeftLegMessage or parsedMessage == bumRightLegMessage:
+            return 18, "", state # wait for your leg to heal
+        
+        if action == -1:
+            if heroRow > 0 and dmap[dlvl][heroRow-1][heroCol] == "+":
+                return 48, "k", state # north
+            if heroRow < 21 and dmap[dlvl][heroRow+1][heroCol] == "+":
+                return 48, "j", state # south
+            if heroCol > 0 and dmap[dlvl][heroRow][heroCol-1] == "+":
+                return 48, "h", state # west
+            if heroCol < 79 and dmap[dlvl][heroRow][heroCol+1] == "+":
+                return 48, "l", state # east
+            #if heroRow > 0 and heroCol > 0 and dmap[dlvl][heroRow-1][heroCol-1] == "+":
+                #return 48, "y", state # northwest
+            #if heroRow < 21 and heroCol > 0 and dmap[dlvl][heroRow+1][heroCol-1] == "+":
+                #return 48, "b", state # southwest
+            #if heroRow > 0 and heroCol < 79 and dmap[dlvl][heroRow-1][heroCol+1] == "+":
+                #return 48, "u", state # northeast
+            #if heroRow < 21 and heroCol < 79 and dmap[dlvl][heroRow+1][heroCol+1] == "+":
+                #return 48, "n", state # southeast
+        
+            
+        if action == -1:
+            action, queue, target = self.explore(dmap[dlvl], heroRow, heroCol, ["+"])
+            if action != -1:
+                return action, "", state
+        
+        # OK back to looking for secret doors.
         
         while action == -1 and state[0] <= CONST_DESPERATION_THRESHOLD:
             action, queue = self.gropeForDoors(dmap[dlvl], searched[dlvl], heroRow, heroCol, state[0])
