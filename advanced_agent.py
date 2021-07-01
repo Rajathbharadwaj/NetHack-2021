@@ -763,6 +763,8 @@ class AdvancedAgent(BatchedAgent):
         return map
     
     def identifyLoot(self, description):
+        if description.find("for sale") != -1:
+            return -1, "" # TODO: Interact with shops (for now we just make a point of not attempting to shoplift)
         beatitude = "?" # b for blessed, u for uncursed, c for cursed, ? for unknown
         # TODO: Figure out how to tell if we're a priest
         # If we're a priest, we should always return "u" beatitude if we would otherwise return "?"
