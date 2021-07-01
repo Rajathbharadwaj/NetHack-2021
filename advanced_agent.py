@@ -87,8 +87,6 @@ class AdvancedAgent(BatchedAgent):
                 self.map[x][dlvl], trashcan = self.update_map(self.lastFloor[x], observations[x], self.map[x][dlvl])
             self.lastFloor[x] = dlvl+1
             self.stepNum[x] += 1
-            #if dones[x]:
-                #print(bytes(observations[x]["message"]).decode('ascii').replace('\0',''))
             if self.stepNum[x] % CONST_MAP_STATUS_FREQUENCY == 0: # print the map every # steps
                 print("CURRENT MAP OF FLOOR ", end="")
                 print(dlvl+1)
@@ -247,7 +245,7 @@ class AdvancedAgent(BatchedAgent):
                     # and can be tinned with a tinning kit)
                     if map[x][y] == "s":
                         continue
-                    if map[x][y] == "@":
+                    if map[x][y] == "@" or map[x][y] == "-":
                         map[x][y] = "-"
                     else:
                         map[x][y] = "$"
@@ -325,11 +323,11 @@ class AdvancedAgent(BatchedAgent):
         bumLeftLegMessage = "Your left leg is in no shape for kicking."
         bumRightLegMessage = "Your right leg is in no shape for kicking."
         
+        lootIndexInMessage = parsedMessage.find(lootMessage)
         
-        
-        if parsedMessage[:12] == lootMessage:
-            parsedLoot = parsedMessage[13:]
-            itemID, beatitude = self.identifyLoot(parsedMessage)
+        if lootIndexInMessage != -1:
+            parsedLoot = parsedMessage[lootIndexInMessage:]
+            itemID, beatitude = self.identifyLoot(parsedLoot)
             if worthTaking.count(itemID) > 0:
                 state[2] = 1 # make a note to pick up the goods when it's convenient
         
@@ -425,7 +423,7 @@ class AdvancedAgent(BatchedAgent):
         
         # Look for somewhere on the map we haven't been close enough yet to label, aim there
         # Or, if the stairs are nearer than anywhere new, just go for the stairs
-        action, queue, target = self.explore(dmap[dlvl], heroRow, heroCol, ["?",">"])
+        action, queue, target = self.explore(dmap[dlvl], heroRow, heroCol, ["?",">","$"])
         if action != -1:
             state[0] = 0 # reset desperation level to zero
             return action, "", state
@@ -457,7 +455,7 @@ class AdvancedAgent(BatchedAgent):
         if action == -1:
             if heroRow > 0 and dmap[dlvl][heroRow-1][heroCol] == "+":
                 return 48, "k", state # north
-            if heroRow < 21 and dmap[dlvl][heroRow+1][heroCol] == "+":
+            if heroRow < 20 and dmap[dlvl][heroRow+1][heroCol] == "+":
                 return 48, "j", state # south
             if heroCol > 0 and dmap[dlvl][heroRow][heroCol-1] == "+":
                 return 48, "h", state # west
@@ -766,9 +764,14 @@ class AdvancedAgent(BatchedAgent):
         if description.find("for sale") != -1:
             return -1, "" # TODO: Interact with shops (for now we just make a point of not attempting to shoplift)
         beatitude = "?" # b for blessed, u for uncursed, c for cursed, ? for unknown
+        if description.find("cursed") != -1:
+            beatitude = "c"
+        if description.find("blessed") != -1:
+            beatitude = "b"
+        if description.find("uncursed") != -1:
+            beatitude = "u"
         # TODO: Figure out how to tell if we're a priest
         # If we're a priest, we should always return "u" beatitude if we would otherwise return "?"
-        # TODO: Implement checking for the word "cursed" or "blessed"
         # TODO: Figure out what to do with identified scrolls/potions/etc (they have a completely different name from any base name)
         for x in range(len(itemNames)):
             if description.find(itemNames[x]) != -1:
