@@ -167,9 +167,6 @@ class AdvancedAgent(BatchedAgent):
         # Feed in your current map and the observation suite the environment gives you
         # This function will return an updated map
         # TODO: Consider not checking every tile on every frame (to save runtime)? Maybe just ones near the hero?
-        # TODO: Mark traps (anything that uses the character "^") and consider them impassible.
-            # If a square that was unmarked before turns out to have a corpse on it, it's a fair assumption that it's a trap.
-            # Statues are also usually traps, but they should be handled seperately, since healers can stethoscope them
         
         message = observations["message"]
         parsedMessage = bytes(message).decode('ascii').replace('\0','')
@@ -316,6 +313,8 @@ class AdvancedAgent(BatchedAgent):
         heroRow = observations["blstats"][1]
         heroCol = observations["blstats"][0]
         dlvl = observations["blstats"][12]-1
+        currHP = observations["blstats"][10]
+        maxHP= observations["blstats"][11]
         handyLockpick = self.searchInventory(observations, lockpicks)[0]
         if handyLockpick != None:
             handyLockpick = chr(handyLockpick)
@@ -325,10 +324,14 @@ class AdvancedAgent(BatchedAgent):
         moreLootMessage = "Things " # Length 7
         bumLeftLegMessage = "Your left leg is in no shape for kicking."
         bumRightLegMessage = "Your right leg is in no shape for kicking."
-        #if parsedMessage[:11] == lootMessage:
-        #    x = 1 # break here so we know how this message is formatted
-        #if parsedMessage[:7] == moreLootMessage:
-        #    x = 1 # break here so we know how this message is formatted
+        
+        
+        
+        if parsedMessage[:12] == lootMessage:
+            parsedLoot = parsedMessage[13:]
+            itemID, beatitude = self.identifyLoot(parsedMessage)
+            if worthTaking.count(itemID) > 0:
+                state[2] = 1 # make a note to pick up the goods when it's convenient
         
         # Agent Name: Savvy Dungeoneer – Has a list of priorities he checks in order
         
@@ -357,6 +360,8 @@ class AdvancedAgent(BatchedAgent):
             # If your intelligence is 3 (putting you at risk of brainlessness), restore it.
             # etc, etc
         
+        
+        
         # If there's a monster immediately adjacent to you, fight it so it doesn't just nibble on you
             # (Floating eyes, among other things, are to be ignored at this step.)
         
@@ -384,6 +389,11 @@ class AdvancedAgent(BatchedAgent):
             comestible, trashcan = self.searchInventory(observations, permafood)
             if comestible != None:
                 return 35, chr(comestible), state
+        
+        if state[2] == 1:
+            # There's something here worth picking up, so let's do that
+            state[2] = 0
+            return 61, "", state
         
         # TODO: If there's a floating eye immediately adjacent to you, see if you have a blindfold or towel handy.
         
@@ -424,8 +434,6 @@ class AdvancedAgent(BatchedAgent):
         
         # TODO: With the obvious paths checked, maybe we can push one of the boulders?
         
-        # TODO: ...Okay, see if there's a locked door on our map we can open. We'll kick it if need be.
-        
         # TODO: Huh. Do we have Stone to Flesh? Maybe we can magic away a boulder to open up a new area.
             # Hm. We don't want to waste our energy converting a boulder that isn't actually blocking anyting.
         
@@ -440,7 +448,7 @@ class AdvancedAgent(BatchedAgent):
             if action == -1:
                 state[0] += 3
         
-        # TODO: Let's take a break from looking for secret doors to see if there's a door we can kick down.
+        # Let's take a break from looking for secret doors to see if there's a door we can kick down.
         # We don't want to do this willy-nilly (we could get hurt, or get fined by a shopkeeper) but sometimes it's necessary
         
         if parsedMessage == bumLeftLegMessage or parsedMessage == bumRightLegMessage:
@@ -753,3 +761,14 @@ class AdvancedAgent(BatchedAgent):
             map[row][col-1] = "s"
             map = self.markShopOnMap(map, row, col-1)
         return map
+    
+    def identifyLoot(self, description):
+        beatitude = "?" # b for blessed, u for uncursed, c for cursed, ? for unknown
+        # TODO: Figure out how to tell if we're a priest
+        # If we're a priest, we should always return "u" beatitude if we would otherwise return "?"
+        # TODO: Implement checking for the word "cursed" or "blessed"
+        # TODO: Figure out what to do with identified scrolls/potions/etc (they have a completely different name from any base name)
+        for x in range(len(itemNames)):
+            if description.find(itemNames[x]) != -1:
+                return itemLookup[x], beatitude
+        return -1, ""
