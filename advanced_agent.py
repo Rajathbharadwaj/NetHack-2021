@@ -28,12 +28,18 @@ class AdvancedAgent(BatchedAgent):
         self.lastFloor = []
         for x in range(num_envs):
             self.lastFloor.append(1)
+        # currently just used to print the map out on a consistent basis
         self.stepNum = []
         for x in range(num_envs):
             self.stepNum.append(0)
+        # can store all sorts of information
+        # current uses:
+            # [0]: Desperation level (tracks when to go back and try to re-search already-searched walls)
+            # [1]: Signals to update the "searched" map (see below)
+            # [2]: Marks our intention to pick up something under our feet when we have the chance
         self.state = []
         for x in range(num_envs):
-            self.state.append([0,0,0,0,0,0,0,0,0,0])
+            self.state.append([0,0,False,0,0,0,0,0,0,0])
         
         # useful for actions that take place over multiple turns
         # (message prompts, actions that need confirmation)
@@ -58,6 +64,9 @@ class AdvancedAgent(BatchedAgent):
                 dungeon.append(floor)
             self.map.append(dungeon)
         
+        # Keep track of which how many times we've searched each space
+        # If we start searching for secret doors we'll want to spread out the search, not just search one spot over and over and over
+        
         self.searched = []
         for i in range(num_envs):
             dungeon = []
@@ -66,7 +75,7 @@ class AdvancedAgent(BatchedAgent):
                 for k in range(21):
                     row = []
                     for l in range(79):
-                        row.append(0) # Any number means "searched # times"
+                        row.append(0) # Means "searched # times"
                     floor.append(row)
                 dungeon.append(floor)
             self.searched.append(dungeon)
@@ -251,6 +260,7 @@ class AdvancedAgent(BatchedAgent):
                         map[x][y] = "$"
                     continue
                 if observations["chars"][x][y] == 94: # trap
+                    # TODO: Squeaky board traps shouldn't be treated as traps because they're pretty harmless
                     map[x][y] = "^"
                     continue
                 if observations["glyphs"][x][y] >= 1144 and observations["glyphs"][x][y] <= 1524 and (map[x][y] == "?" or map[x][y] == "^"):
@@ -286,7 +296,7 @@ class AdvancedAgent(BatchedAgent):
         if searched != []:
             # we're searching, so let's update our map accordingly
             searched[heroRow][heroCol] += 1
-            if heroRow < 21:
+            if heroRow < 20:
                 searched[heroRow+1][heroCol] += 1
             if heroCol < 79:
                 searched[heroRow][heroCol+1] += 1
@@ -298,9 +308,9 @@ class AdvancedAgent(BatchedAgent):
                 searched[heroRow+1][heroCol+1] += 1
             if heroRow > 0 and heroCol < 79:
                 searched[heroRow+1][heroCol-1] += 1
-            if heroRow < 21 and heroCol > 0:
+            if heroRow < 20 and heroCol > 0:
                 searched[heroRow-1][heroCol+1] += 1
-            if heroRow < 21 and heroCol > 79:
+            if heroRow < 20 and heroCol > 79:
                 searched[heroRow-1][heroCol-1] += 1
         return map, searched
     
@@ -314,8 +324,11 @@ class AdvancedAgent(BatchedAgent):
         currHP = observations["blstats"][10]
         maxHP= observations["blstats"][11]
         handyLockpick = self.searchInventory(observations, lockpicks)[0]
+        handyBlindfold = self.searchInventory(observations, blinds)[0]
         if handyLockpick != None:
             handyLockpick = chr(handyLockpick)
+        if handyBlindfold != None:
+            handyBlindfold = chr(handyBlindfold)
         lockedMessage = "This door is locked." # Length 20
         shouldntMessage = "Really attack " # Length 14
         lootMessage = "You see here" # Length 11
@@ -329,7 +342,7 @@ class AdvancedAgent(BatchedAgent):
             parsedLoot = parsedMessage[lootIndexInMessage:]
             itemID, beatitude = self.identifyLoot(parsedLoot)
             if worthTaking.count(itemID) > 0:
-                state[2] = 1 # make a note to pick up the goods when it's convenient
+                state[2] = True # make a note to pick up the goods when it's convenient
         
         # Agent Name: Savvy Dungeoneer – Has a list of priorities he checks in order
         
@@ -388,16 +401,32 @@ class AdvancedAgent(BatchedAgent):
             if comestible != None:
                 return 35, chr(comestible), state
         
-        if state[2] == 1:
+        if state[2]:
             # There's something here worth picking up, so let's do that
-            state[2] = 0
+            state[2] = False
             return 61, "", state
         
-        # TODO: If there's a floating eye immediately adjacent to you, see if you have a blindfold or towel handy.
+        # Have a blindfold? See if you can use it to clear out a Floating Eye.
+        # (This will repeatedly take off and put on the blindfold until the eye dies, but that's pretty much OK.)
+        # *Whacks* *Peeks* "Nope, not dead yet." *Whacks* *Peeks* "Nope, not dead yet." *Whacks* *Peeks* "Oh, it's dead."
         
-        # TODO: If there's something near you that looks like it could come in handy, take a closer look
-        
-        # TODO: Appraise any items you happen to be standing on; take what's good, mark the rest as bad
+        if handyBlindfold != None:
+            if heroRow > 0 and dmap[dlvl][heroRow-1][heroCol] == "e":
+                return 63, handyBlindfold+"FkFkR"+handyBlindfold+" ", state # north
+            if heroRow < 20 and dmap[dlvl][heroRow+1][heroCol] == "e":
+                return 63, handyBlindfold+"FjFjR"+handyBlindfold+" ", state # south
+            if heroCol > 0 and dmap[dlvl][heroRow][heroCol-1] == "&":
+                return 63, handyBlindfold+"FhFhR"+handyBlindfold+" ", state # west
+            if heroCol < 78 and dmap[dlvl][heroRow][heroCol+1] == "&":
+                return 63, handyBlindfold+"FlFlR"+handyBlindfold+" ", state # east
+            if heroRow > 0 and heroCol > 0 and dmap[dlvl][heroRow-1][heroCol-1] == "e":
+                return 63, handyBlindfold+"FyFyR"+handyBlindfold+" ", state # northwest
+            if heroRow < 20 and heroCol > 0 and dmap[dlvl][heroRow+1][heroCol-1] == "e":
+                return 63, handyBlindfold+"FbFbR"+handyBlindfold+" ", state # southwest
+            if heroRow > 0 and heroCol < 78 and dmap[dlvl][heroRow-1][heroCol+1] == "e":
+                return 63, handyBlindfold+"FuFuR"+handyBlindfold+" ", state # northeast
+            if heroRow < 20 and heroCol < 78 and dmap[dlvl][heroRow+1][heroCol+1] == "e":
+                return 63, handyBlindfold+"FnFnR"+handyBlindfold+" ", state # southeast
         
         # TODO: Out of food? See if there's an edible monster nearby.
         
@@ -406,7 +435,7 @@ class AdvancedAgent(BatchedAgent):
             # Oooooh, we do indeed have a door-opener to work with. Let's see if there's something to pick.
             if heroRow > 0 and dmap[dlvl][heroRow-1][heroCol] == "+":
                 return 24, handyLockpick+"k", state # north
-            if heroRow < 21 and dmap[dlvl][heroRow+1][heroCol] == "+":
+            if heroRow < 20 and dmap[dlvl][heroRow+1][heroCol] == "+":
                 return 24, handyLockpick+"j", state # south
             if heroCol > 0 and dmap[dlvl][heroRow][heroCol-1] == "+":
                 return 24, handyLockpick+"h", state # west
@@ -414,13 +443,14 @@ class AdvancedAgent(BatchedAgent):
                 return 24, handyLockpick+"l", state # east
             if heroRow > 0 and heroCol > 0 and dmap[dlvl][heroRow-1][heroCol-1] == "+":
                 return 24, handyLockpick+"y", state # northwest
-            if heroRow < 21 and heroCol > 0 and dmap[dlvl][heroRow+1][heroCol-1] == "+":
+            if heroRow < 20 and heroCol > 0 and dmap[dlvl][heroRow+1][heroCol-1] == "+":
                 return 24, handyLockpick+"b", state # southwest
             if heroRow > 0 and heroCol < 79 and dmap[dlvl][heroRow-1][heroCol+1] == "+":
                 return 24, handyLockpick+"u", state # northeast
-            if heroRow < 21 and heroCol < 79 and dmap[dlvl][heroRow+1][heroCol+1] == "+":
+            if heroRow < 20 and heroCol < 79 and dmap[dlvl][heroRow+1][heroCol+1] == "+":
                 return 24, handyLockpick+"n", state # southeast
         
+        # If there's loot nearby, take a closer look
         # Look for somewhere on the map we haven't been close enough yet to label, aim there
         # Or, if the stairs are nearer than anywhere new, just go for the stairs
         action, queue, target = self.explore(dmap[dlvl], heroRow, heroCol, ["?",">","$"])
@@ -442,7 +472,7 @@ class AdvancedAgent(BatchedAgent):
             state[0] = 3 # start out searching each wall within 3 moves 3 tiles each
         
         while action == -1 and state[0] <= 9:
-            action, queue = self.gropeForDoors(dmap[dlvl], searched[dlvl], heroRow, heroCol, state[0])
+            action, trashcan = self.gropeForDoors(dmap[dlvl], searched[dlvl], heroRow, heroCol, state[0])
             if action == -1:
                 state[0] += 3
         
@@ -463,11 +493,11 @@ class AdvancedAgent(BatchedAgent):
                 return 48, "l", state # east
             #if heroRow > 0 and heroCol > 0 and dmap[dlvl][heroRow-1][heroCol-1] == "+":
                 #return 48, "y", state # northwest
-            #if heroRow < 21 and heroCol > 0 and dmap[dlvl][heroRow+1][heroCol-1] == "+":
+            #if heroRow < 20 and heroCol > 0 and dmap[dlvl][heroRow+1][heroCol-1] == "+":
                 #return 48, "b", state # southwest
             #if heroRow > 0 and heroCol < 79 and dmap[dlvl][heroRow-1][heroCol+1] == "+":
                 #return 48, "u", state # northeast
-            #if heroRow < 21 and heroCol < 79 and dmap[dlvl][heroRow+1][heroCol+1] == "+":
+            #if heroRow < 20 and heroCol < 79 and dmap[dlvl][heroRow+1][heroCol+1] == "+":
                 #return 48, "n", state # southeast
         
             
@@ -501,7 +531,7 @@ class AdvancedAgent(BatchedAgent):
             print("Floor panicked on: ", end="")
             print(dlvl+1)
             if not CONST_SHOW_MAP_ON_PANIC:
-                return 65, "y", queue # just skip straight to sending the order to quit the game
+                return 65, "y", state # just skip straight to sending the order to quit the game
             for y in range(21):
                 line = ""
                 for z in range(79):
@@ -543,7 +573,7 @@ class AdvancedAgent(BatchedAgent):
             return False
         if char == "&": # generic monster; attack
             return True
-        if char == "@": # the fourth Rider, War, theoretically the most dangerous
+        if char == "@": # the fourth Rider, War, theoretically the most dangerous (marked mostly for the purpose of printing to the screen)
             return True
         if char == "~": # A shopkeeper, or other peaceful that doesn't merit messing with
             return False
@@ -770,10 +800,18 @@ class AdvancedAgent(BatchedAgent):
             beatitude = "b"
         if description.find("uncursed") != -1:
             beatitude = "u"
+        if description.find("unholy water") != -1:
+            return 2203, "c"
+        if description.find("holy water") != -1:
+            return 2203, "b"
         # TODO: Figure out how to tell if we're a priest
         # If we're a priest, we should always return "u" beatitude if we would otherwise return "?"
         # TODO: Figure out what to do with identified scrolls/potions/etc (they have a completely different name from any base name)
         for x in range(len(itemNames)):
-            if description.find(itemNames[x]) != -1:
-                return itemLookup[x], beatitude
+            # We'll check the items in reverse order in the list
+            # This is because generic versions of items (e.g. "arrow" vs "runed arrow") appear first but should be evaluated last
+            # Otherwise all runed arrows will be treated as regular arrows!
+            index = len(itemNames)-x-1
+            if description.find(itemNames[index]) != -1:
+                return itemLookup[index], beatitude
         return -1, ""
