@@ -8,6 +8,7 @@ CONST_TREAT_UNKNOWN_AS_PASSIBLE = True
 CONST_MAP_STATUS_FREQUENCY = 1000
 CONST_SHOW_MAP_ON_DEATH = False
 CONST_SHOW_MAP_ON_PANIC = True
+CONST_QUIET = False # If true, disable all printing
 CONST_DESPERATION_THRESHOLD = 30 # Agent will panic if its desperation exceeds this value
 
 
@@ -90,13 +91,10 @@ class AdvancedAgent(BatchedAgent):
         actions = self.handle_queue(dones)
         for x in range(self.num_envs):
             dlvl = observations[x]["blstats"][12]-1
-            if self.state[x][1] == 1:
-                self.map[x][dlvl], self.searched[x][dlvl] = self.update_map(self.lastFloor[x], observations[x], self.map[x][dlvl], self.searched[x][dlvl])
-            else:
-                self.map[x][dlvl], trashcan = self.update_map(self.lastFloor[x], observations[x], self.map[x][dlvl])
+            self.map[x][dlvl] = self.update_map(self.lastFloor[x], observations[x], self.map[x][dlvl], self.state[x])
             self.lastFloor[x] = dlvl+1
             self.stepNum[x] += 1
-            if self.stepNum[x] % CONST_MAP_STATUS_FREQUENCY == 0: # print the map every # steps
+            if self.stepNum[x] % CONST_MAP_STATUS_FREQUENCY == 0 and not CONST_QUIET: # print the map every # steps
                 print("CURRENT MAP OF FLOOR ", end="")
                 print(dlvl+1)
                 for y in range(21):
@@ -105,10 +103,12 @@ class AdvancedAgent(BatchedAgent):
                         line += self.map[x][dlvl][y][z]
                     print(line)
                 print("\n\n")
+                
             if actions[x] == -1:
                 actions[x], self.queue[x], self.state[x] = self.choose_action(self.map[x], observations[x], rewards[x], dones[x], infos[x], self.state[x], self.searched[x])
             if self.state[x][1] == 1 or (len(self.queue[x]) > 0 and self.queue[x][0] == 's'):
                 # update the searched map
+                
                 self.state[x][1] = 0
                 y = observations[x]["blstats"][1]-1
                 while y <= observations[x]["blstats"][1]+1:
@@ -128,9 +128,9 @@ class AdvancedAgent(BatchedAgent):
                 # Run over, reset the notebook for the next run
                 self.lastFloor[x] = 1
                 self.stepNum[x] = 0
-                self.state[x] = [0,0,0,0,0,0,0,0,0,0]
+                self.state[x] = [0,0,False,0,0,0,0,0,0,0]
                 self.queue[x] = ""
-                if CONST_SHOW_MAP_ON_DEATH:
+                if CONST_SHOW_MAP_ON_DEATH and not CONST_QUIET:
                     # print the recorded map for debug purposes
                     print("\n\n")
                     for y in range(21):
@@ -169,7 +169,7 @@ class AdvancedAgent(BatchedAgent):
                 self.queue[x] = self.queue[x][1:] # pop the character we just handled from the queue
         return actions
     
-    def update_map(self, lastFloor, observations, map, searched=[]):
+    def update_map(self, lastFloor, observations, map, state):
         # Runs once per step (per active environment)
         # Feed in your current map and the observation suite the environment gives you
         # This function will return an updated map
@@ -193,9 +193,10 @@ class AdvancedAgent(BatchedAgent):
         hesitate = (parsedMessage[:14] == shouldntMessage and message[14] >= 65 and message[14] <= 90)
             # If the game asks us to confirm before we attack a character with a capitalized name, it's probably a Bad Idea to attack them.
         if observations["blstats"][12] != lastFloor:
-            print("Now entering floor ", end="")
-            print(observations["blstats"][12])
-            return map, searched # don't update the map on the step you change floor, the NLE observation is wack on that step
+            if not CONST_QUIET:
+                print("Now entering floor ", end="")
+                print(observations["blstats"][12])
+            return map # don't update the map on the step you change floor, the NLE observation is wack on that step
         screen = observations["chars"]
         for x in range(21):
             for y in range(79):
@@ -247,18 +248,6 @@ class AdvancedAgent(BatchedAgent):
                     if y > 0 and map[x][y-1] == "s":
                         map[x][y] = "s"
                         continue
-                if observations["glyphs"][x][y] >= 1907 and observations["glyphs"][x][y] <= 2352:
-                    # Potential loot!
-                    # (We could treat corpse glyphs as part of this category...
-                    # corpses aren't too often worth lugging around, but they sometimes have items,
-                    # and can be tinned with a tinning kit)
-                    if map[x][y] == "s":
-                        continue
-                    if map[x][y] == "@" or map[x][y] == "-":
-                        map[x][y] = "-"
-                    else:
-                        map[x][y] = "$"
-                    continue
                 if observations["chars"][x][y] == 94: # trap
                     # TODO: Squeaky board traps shouldn't be treated as traps because they're pretty harmless
                     map[x][y] = "^"
@@ -267,6 +256,18 @@ class AdvancedAgent(BatchedAgent):
                     # corpse that was already there
                     # very strong hint that there's some sort of trap
                     map[x][y]
+                    continue
+                if (observations["glyphs"][x][y] >= 1907 and observations["glyphs"][x][y] <= 2352) or (observations["glyphs"][x][y] >= 1144 and observations["glyphs"][x][y] <= 1524):
+                    # Potential loot!
+                    if map[x][y] == "s":
+                        continue
+                    if map[x][y] == "@" or map[x][y] == "-":
+                        if(map[x][y] == "@" and state[2]): # Aw man, we meant to pick that up! It's still valuable!
+                            map[x][y] = "$"
+                        else: # Eh, we already saw this and passed it up, no need to go there again
+                            map[x][y] = "-"
+                    else:
+                        map[x][y] = "$"
                     continue
                 if observations["glyphs"][x][y] <= 380:
                     if hesitate and abs(observations["blstats"][1] - x) <= 1 and abs(observations["blstats"][0] - y) <= 1:
@@ -292,27 +293,7 @@ class AdvancedAgent(BatchedAgent):
                 if map[x][y] != ">" and (observations["chars"][x][y] != 43 or map[x][y] != "+") and map[x][y] != "s":
                     # open space, possibly with something in it that isn't as stalwart as a wall
                     map[x][y] = "."
-
-        if searched != []:
-            # we're searching, so let's update our map accordingly
-            searched[heroRow][heroCol] += 1
-            if heroRow < 20:
-                searched[heroRow+1][heroCol] += 1
-            if heroCol < 79:
-                searched[heroRow][heroCol+1] += 1
-            if heroRow > 0:
-                searched[heroRow-1][heroCol] += 1
-            if heroCol > 0:
-                searched[heroRow][heroCol-1] += 1
-            if heroRow > 0 and heroCol > 0:
-                searched[heroRow+1][heroCol+1] += 1
-            if heroRow > 0 and heroCol < 79:
-                searched[heroRow+1][heroCol-1] += 1
-            if heroRow < 20 and heroCol > 0:
-                searched[heroRow-1][heroCol+1] += 1
-            if heroRow < 20 and heroCol > 79:
-                searched[heroRow-1][heroCol-1] += 1
-        return map, searched
+        return map
     
     def choose_action(self, dmap, observations, rewards, dones, infos, state, searched):
         message = observations["message"]
@@ -325,10 +306,10 @@ class AdvancedAgent(BatchedAgent):
         maxHP= observations["blstats"][11]
         handyLockpick = self.searchInventory(observations, lockpicks)[0]
         handyBlindfold = self.searchInventory(observations, blinds)[0]
-        if handyLockpick != None:
-            handyLockpick = chr(handyLockpick)
-        if handyBlindfold != None:
-            handyBlindfold = chr(handyBlindfold)
+        if len(handyLockpick) > 0:
+            handyLockpick = chr(handyLockpick[0])
+        if len(handyBlindfold) > 0:
+            handyBlindfold = chr(handyBlindfold[0])
         lockedMessage = "This door is locked." # Length 20
         shouldntMessage = "Really attack " # Length 14
         lootMessage = "You see here" # Length 11
@@ -337,9 +318,12 @@ class AdvancedAgent(BatchedAgent):
         bumRightLegMessage = "Your right leg is in no shape for kicking."
         
         lootIndexInMessage = parsedMessage.find(lootMessage)
+        parsedLoot = " [an item]"
         
         if lootIndexInMessage != -1:
-            parsedLoot = parsedMessage[lootIndexInMessage:]
+            parsedLoot = parsedMessage[lootIndexInMessage+len(lootMessage):]
+            locatedPeriod = parsedLoot.find(".")
+            parsedLoot = parsedLoot[:locatedPeriod]
             itemID, beatitude = self.identifyLoot(parsedLoot)
             if worthTaking.count(itemID) > 0:
                 state[2] = True # make a note to pick up the goods when it's convenient
@@ -397,12 +381,16 @@ class AdvancedAgent(BatchedAgent):
         # TODO: Evaluate your current condition – heal if appropriate, eat if you're hungry, etc.
         if observations["blstats"][21] > 1:
             # Hero is hungry. Eat food!
-            comestible, trashcan = self.searchInventory(observations, permafood)
-            if comestible != None:
-                return 35, chr(comestible), state
+            comestibles, foodTypes, indices = self.searchInventory(observations, permafood)
+            for x in range(len(comestibles)):
+                return 35, chr(comestibles[x]), state
+            #if comestible != None:
+            #    return 35, chr(comestible), state
         
         if state[2]:
             # There's something here worth picking up, so let's do that
+            if not CONST_QUIET:
+                print("Picked up:"+parsedLoot)
             state[2] = False
             return 61, "", state
         
@@ -410,28 +398,28 @@ class AdvancedAgent(BatchedAgent):
         # (This will repeatedly take off and put on the blindfold until the eye dies, but that's pretty much OK.)
         # *Whacks* *Peeks* "Nope, not dead yet." *Whacks* *Peeks* "Nope, not dead yet." *Whacks* *Peeks* "Oh, it's dead."
         
-        if handyBlindfold != None:
+        if len(handyBlindfold) > 0:
             if heroRow > 0 and dmap[dlvl][heroRow-1][heroCol] == "e":
-                return 63, handyBlindfold+"FkFkR"+handyBlindfold+" ", state # north
+                return 63, handyBlindfold[0]+"FkFkR"+handyBlindfold[0]+" ", state # north
             if heroRow < 20 and dmap[dlvl][heroRow+1][heroCol] == "e":
-                return 63, handyBlindfold+"FjFjR"+handyBlindfold+" ", state # south
+                return 63, handyBlindfold[0]+"FjFjR"+handyBlindfold[0]+" ", state # south
             if heroCol > 0 and dmap[dlvl][heroRow][heroCol-1] == "&":
-                return 63, handyBlindfold+"FhFhR"+handyBlindfold+" ", state # west
+                return 63, handyBlindfold[0]+"FhFhR"+handyBlindfold[0]+" ", state # west
             if heroCol < 78 and dmap[dlvl][heroRow][heroCol+1] == "&":
-                return 63, handyBlindfold+"FlFlR"+handyBlindfold+" ", state # east
+                return 63, handyBlindfold[0]+"FlFlR"+handyBlindfold[0]+" ", state # east
             if heroRow > 0 and heroCol > 0 and dmap[dlvl][heroRow-1][heroCol-1] == "e":
-                return 63, handyBlindfold+"FyFyR"+handyBlindfold+" ", state # northwest
+                return 63, handyBlindfold[0]+"FyFyR"+handyBlindfold[0]+" ", state # northwest
             if heroRow < 20 and heroCol > 0 and dmap[dlvl][heroRow+1][heroCol-1] == "e":
-                return 63, handyBlindfold+"FbFbR"+handyBlindfold+" ", state # southwest
+                return 63, handyBlindfold[0]+"FbFbR"+handyBlindfold[0]+" ", state # southwest
             if heroRow > 0 and heroCol < 78 and dmap[dlvl][heroRow-1][heroCol+1] == "e":
-                return 63, handyBlindfold+"FuFuR"+handyBlindfold+" ", state # northeast
+                return 63, handyBlindfold[0]+"FuFuR"+handyBlindfold[0]+" ", state # northeast
             if heroRow < 20 and heroCol < 78 and dmap[dlvl][heroRow+1][heroCol+1] == "e":
-                return 63, handyBlindfold+"FnFnR"+handyBlindfold+" ", state # southeast
+                return 63, handyBlindfold[0]+"FnFnR"+handyBlindfold[0]+" ", state # southeast
         
         # TODO: Out of food? See if there's an edible monster nearby.
         
         # See if we can make use of a lockpick or credit card
-        if handyLockpick != None:
+        if handyLockpick != []:
             # Oooooh, we do indeed have a door-opener to work with. Let's see if there's something to pick.
             if heroRow > 0 and dmap[dlvl][heroRow-1][heroCol] == "+":
                 return 24, handyLockpick+"k", state # north
@@ -453,6 +441,7 @@ class AdvancedAgent(BatchedAgent):
         # If there's loot nearby, take a closer look
         # Look for somewhere on the map we haven't been close enough yet to label, aim there
         # Or, if the stairs are nearer than anywhere new, just go for the stairs
+        # TODO: If the agent gets poly'd into a form without hands, it currently can't comprehend why it can't open doors
         action, queue, target = self.explore(dmap[dlvl], heroRow, heroCol, ["?",">","$"])
         if action != -1:
             state[0] = 0 # reset desperation level to zero
@@ -502,14 +491,14 @@ class AdvancedAgent(BatchedAgent):
         
             
         if action == -1:
-            action, queue, target = self.explore(dmap[dlvl], heroRow, heroCol, ["+"])
+            action, trashcan, target = self.explore(dmap[dlvl], heroRow, heroCol, ["+"])
             if action != -1:
                 return action, "", state
         
         # OK back to looking for secret doors.
         
         while action == -1 and state[0] <= CONST_DESPERATION_THRESHOLD:
-            action, queue = self.gropeForDoors(dmap[dlvl], searched[dlvl], heroRow, heroCol, state[0])
+            action, trashcan = self.gropeForDoors(dmap[dlvl], searched[dlvl], heroRow, heroCol, state[0])
             if action == -1:
                 state[0] += 3
         
@@ -527,10 +516,11 @@ class AdvancedAgent(BatchedAgent):
         # Failing everything else, give up and quit the game
         # Print out the current floor's map so we can look into what happened
         if action == -1:
-            print("Agent has panicked! (Its logic gives it no move to make.)")
-            print("Floor panicked on: ", end="")
-            print(dlvl+1)
-            if not CONST_SHOW_MAP_ON_PANIC:
+            if not CONST_QUIET:
+                print("Agent has panicked! (Its logic gives it no move to make.)")
+                print("Floor panicked on: ", end="")
+                print(dlvl+1)
+            if not CONST_SHOW_MAP_ON_PANIC or CONST_QUIET:
                 return 65, "y", state # just skip straight to sending the order to quit the game
             for y in range(21):
                 line = ""
@@ -690,11 +680,16 @@ class AdvancedAgent(BatchedAgent):
     def searchInventory(self, observations, desired):
         # Look in the inventory for an item whose glyph number is one of the ones in desired
         # If one is found, report its inventory slot and which glyph it is
+        letters = []
+        types = []
+        indices = []
         for x in range(len(observations["inv_glyphs"])):
             for y in desired:
                 if observations["inv_glyphs"][x] == y:
-                    return observations["inv_letters"][x], y
-        return None, None
+                    letters.append(observations["inv_letters"][x])
+                    types.append(y)
+                    indices.append(x)
+        return letters, types, indices
     
     def gropeForDoors(self, map, searched, row, col, desperation):
         # Similar to "explore" – not entirely, though
