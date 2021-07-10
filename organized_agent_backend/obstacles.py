@@ -2,11 +2,45 @@
 
 from .utilities import *
 from .gamestate import CONST_DESPERATION_RATE
+from .proceed import pathfind
 
 def evaluateObstacles(state, observations):
 	# TODO: Re-implement procedures to deal with locked doors
 	if(state.desperation < CONST_DESPERATION_RATE):
 		state.incrementDesperation()
+	action = gropeForDoors(state, observations, state.desperation)
+	while action == -1 and state.desperation < 10:
+		state.incrementDesperation()
+		action = gropeForDoors(state, observations, state.desperation)
+	heroRow = readHeroRow(observations)
+	heroCol = readHeroCol(observations)
+	if heroRow > 0 and state.readMap(heroRow-1,heroCol) == "+":
+		state.queue = [0] # north
+		return 48
+	if heroRow < 20 and state.readMap(heroRow+1,heroCol) == "+":
+		state.queue = [2] # south
+		return 48
+	if heroCol > 0 and state.readMap(heroRow,heroCol-1) == "+":
+		state.queue = [3] # west
+		return 48
+	if heroCol < 78 and state.readMap(heroRow,heroCol+1) == "+":
+		state.queue = [1] # east
+		return 48
+	if heroRow > 0 and heroCol > 0 and state.readMap(heroRow-1,heroCol-1) == "+":
+		state.queue = [7] # northwest
+		return 48
+	if heroRow < 20 and heroCol > 0 and state.readMap(heroRow+1,heroCol-1) == "+":
+		state.queue = [6] # southwest
+		return 48
+	if heroRow > 0 and heroCol < 78 and state.readMap(heroRow-1,heroCol+1) == "+":
+		state.queue = [4] # northeast
+		return 48
+	if heroRow < 20 and heroCol < 78 and state.readMap(heroRow+1,heroCol+1) == "+":
+		state.queue = [5] # southeast
+		return 48
+	
+	action = pathfind(state, observations, target="+")
+	
 	action = gropeForDoors(state, observations, state.desperation)
 	while action == -1 and state.desperation < 30:
 		state.incrementDesperation()
