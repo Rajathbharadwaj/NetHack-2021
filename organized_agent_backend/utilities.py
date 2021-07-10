@@ -34,44 +34,96 @@ numericCompass = [
     "NW"
 ]
 
-def searchInventory(self, observations, desired):
-    # Look in the inventory for an item whose glyph number is one of the ones in desired
-    # If one or more is found, report their inventory slots and which glyph they are
-    letters = []
-    types = []
-    indices = []
-    for x in range(len(observations["inv_glyphs"])):
-        for y in desired:
-            if observations["inv_glyphs"][x] == y:
-                letters.append(observations["inv_letters"][x])
-                types.append(y)
-                indices.append(x)
-    return letters, types, indices
+keyLookup = {
+    "a" : 24,
+    "b" : 6,
+    "c" : 30,
+    "d" : 33,
+    "e" : 35,
+    "f" : 39,
+    "g" : 72,
+    "h" : 3,
+    "i" : 44,
+    "j" : 2,
+    "k" : 0,
+    "l" : 1,
+    "m" : 54,
+    "n" : 5,
+    "o" : 57,
+    "p" : 60,
+    "q" : 64,
+    "r" : 67,
+    "s" : 75,
+    "t" : 83,
+    "u" : 4,
+    "v" : 90,
+    "w" : 94,
+    "x" : 79,
+    "y" : 7,
+    "z" : 96,
+    "A" : 81,
+    "B" : 14,
+    "C" : 27,
+    "D" : 34,
+    "E" : 37,
+    "F" : 40,
+    "G" : 73,
+    "H" : 11,
+    "I" : 45,
+    "J" : 10,
+    "K" : 8,
+    "L" : 9,
+    "M" : 55,
+    "N" : 13,
+    "O" : 58,
+    "P" : 63,
+    "Q" : 66,
+    "R" : 69,
+    "S" : 74,
+    "T" : 80,
+    "U" : 12,
+    "V" : 43,
+    "W" : 91,
+    "X" : 87,
+    "Y" : 15,
+    "Z" : 28,
+    "." : 18,
+    "," : 61,
+    "<" : 16,
+    ">" : 17,
+    ";" : 51,
+    "0" : 102,
+    "1" : 103,
+    "2" : 104,
+    "3" : 105,
+    "4" : 106,
+    "5" : 107,
+    "6" : 108,
+    "7" : 109,
+    "8" : 110,
+    "9" : 111,
+    "+" : 97,
+    "-" : 98,
+    " " : 99,
+    #"}" : 19, # represents enter ("}" serves no inherent purpose in nethack)
+    #"{" : -1, # special character; represents an open slot in the queue
+    "$" : 112 # Added to NLE after the fact
+}
 
+def readMessage(observations):
+    return bytes(observations["message"]).decode('ascii').replace('\0','')
 
+def readHeroCol(observations):
+    return observations["blstats"][0]
 
-def identifyLoot(description):
-    if description.find("for sale") != -1:
-        return -1, "" # TODO: Interact with shops (for now we just make a point of not attempting to shoplift)
-    beatitude = "?" # b for blessed, u for uncursed, c for cursed, ? for unknown
-    if description.find("cursed") != -1:
-        beatitude = "c"
-    if description.find("blessed") != -1:
-        beatitude = "b"
-    if description.find("uncursed") != -1:
-        beatitude = "u"
-    if description.find("unholy water") != -1:
-        return 2203, "c"
-    if description.find("holy water") != -1:
-        return 2203, "b"
-    # TODO: Figure out how to tell if we're a priest
-    # If we're a priest, we should always return "u" beatitude if we would otherwise return "?"
-    # TODO: Figure out what to do with identified scrolls/potions/etc (they have a completely different name from any base name)
-    for x in range(len(itemNames)):
-        # We'll check the items in reverse order in the list
-        # This is because generic versions of items (e.g. "arrow" vs "runed arrow") appear first but should be evaluated last
-        # Otherwise all runed arrows will be treated as regular arrows!
-        index = len(itemNames)-x-1
-        if description.find(itemNames[index]) != -1:
-            return itemLookup[index], beatitude
-    return -1, ""
+def readHeroRow(observations):
+    return observations["blstats"][1]
+
+def readDungeonLevel(observations):
+    # Subtract one so it lines up with our zero-indexed arrays
+    return observations["blstats"][12]-1
+
+def readSquare(observations, row, col):
+    glyph = observations["glyphs"][row][col]
+    char = observations["chars"][row][col]
+    return glyph, char

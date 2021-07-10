@@ -6,9 +6,9 @@ lockpicks = [2103, 2104]
 
 blinds = [2114, 2115]
 
-permafood = [1299, 2147, 2148, 2149, 2150, 2151, 2158, 2159, 2160, 2161, 2162, 2163, 2164, 2166, 2168, 2170, 2172, 2173, 2174, 2175, 2176, 2177]
+permafood = [1299, 2148, 2149, 2150, 2151, 2158, 2159, 2160, 2161, 2162, 2163, 2164, 2166, 2168, 2170, 2172, 2173, 2174, 2175, 2176, 2177]
 
-worthTaking = [1299, 2103, 2104, 2114, 2115, 2147, 2148, 2149, 2150, 2151, 2158, 2159, 2160, 2161, 2162, 2163, 2164, 2166, 2168, 2170, 2172, 2173, 2174, 2175, 2176, 2177]
+worthTaking = [1299, 2103, 2104, 2114, 2115, 2148, 2149, 2150, 2151, 2158, 2159, 2160, 2161, 2162, 2163, 2164, 2166, 2168, 2170, 2172, 2173, 2174, 2175, 2176, 2177]
 
 # These are two parallel arrays indexing the glyph IDs of every item, and giving their visible name.
 # This way, the agent can look in this table to figure out what's what, when it sees "you see here a <thing>"
@@ -19,6 +19,9 @@ worthTaking = [1299, 2103, 2104, 2114, 2115, 2147, 2148, 2149, 2150, 2151, 2158,
 # I
 # am not entirely looking forward to that. It's an awful big ask for just one person.
 # But for now, here are the arrays.
+
+# TODO: We're going to want to sneak some glyph IDs in here that don't appear in the raw observations.
+	# These glyph IDs will correspond to identified scrolls/potions/wands/etc
 
 itemNames = [
 	"pear", # a bunch of stuff has "pear" in its name so this is going straight to the front to avoid confusion

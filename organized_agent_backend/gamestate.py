@@ -1,6 +1,6 @@
 import numpy as np
 
-from agents.base import BatchedAgent
+from .utilities import *
 
 CONST_QUIET = False # Enable to silence all prints about gamestate
 CONST_DEAD_END_MULT = 3 # Multiply the number of times dead end squares get searched by this value
@@ -53,7 +53,7 @@ class Gamestate(object):
         dlvl = readDungeonLevel(observations)
         self.stepsTaken += 1
         if self.stepsTaken % CONST_STATUS_UPDATE_PERIOD == 0:
-            self.printMap()
+            self.statusReport(observations)
         if dlvl != self.lastKnownLevel:
             # Don't update the map on the step level changes; NLE is wack on that step
             self.resetDesperation()
@@ -157,6 +157,10 @@ class Gamestate(object):
         else:
             self.searchMap[dlvl][row][col] += 1
         return
+    def statusReport(self, observations):
+        self.printMap()
+        print("\"" + readMessage(observations) + "\"\n")
+        
     def coreDump(self, message, observations):
         # TODO
         # Something went wrong, and we need to figure out what
@@ -187,24 +191,6 @@ class Gamestate(object):
                 print(self.dmap[self.lastKnownLevel][x][y],end="")
             print("") # end line of printout
         print("")
-
-def readMessage(observations):
-    return bytes(observations["message"]).decode('ascii').replace('\0','')
-
-def readHeroCol(observations):
-    return observations["blstats"][0]
-
-def readHeroRow(observations):
-    return observations["blstats"][1]
-
-def readDungeonLevel(observations):
-    # Subtract one so it lines up with our zero-indexed arrays
-    return observations["blstats"][12]-1
-
-def readSquare(observations, row, col):
-    glyph = observations["glyphs"][row][col]
-    char = observations["chars"][row][col]
-    return glyph, char
     
 def makeEmptyMap(depth,default):
     # Returns a 3D array, dimensioned to correspond to the dungeon's squares
@@ -228,7 +214,7 @@ def updateMainMapSquare(previousMarking, observedGlyph, observedChar, heroXDist,
         return previousMarking # Don't overwrite the stairs
     if previousMarking == "s":
         return previousMarking # If shopkeep didn't let you in before they won't let you in now
-    if observedGlyph >= 2360 and observedGlyph <= 2365: # Explicit wall, such as the ones around rooms
+    if observedGlyph >= 2360 and observedGlyph <= 2369: # Explicit wall, such as the ones around rooms
         return "X"
     if observedGlyph == 2359:
         if isNearHero: # "Solid stone"; acts identically to walls
@@ -266,7 +252,7 @@ def updateMainMapSquare(previousMarking, observedGlyph, observedChar, heroXDist,
             return "s" # We have a pickaxe, so shopkeep won't let us in. Don't get your hopes up if shopkeep steps away for a moment
         else:
             return "~" # Do not try to fight the shopkeeper, he's too tough for a low-level hero like us
-    if observedGlyph == 268: # Vault guard
+    if observedGlyph == 268 or observedGlyph == 270: # Vault guard or Oracle
         return "~" # Again, too tough to realistically fight
     if observedGlyph <= 380:
         return "&" # Monster whose type we don't have special procedures for. Roll for initiative or something
