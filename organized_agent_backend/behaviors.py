@@ -18,9 +18,9 @@ def chooseAction(state, observations):
     action = state.popFromQueue()
     if action != -1:
         return action
-    if(len(searchInventory(observations, blinds)[0]) == 0):
-        state.queue = [7]
-        return 65
+    #if(len(searchInventory(observations, blinds)[0]) == 0): # Uncomment this to startscum for a specific item
+    #    state.queue = [7]
+    #    return 65
     for protocol in CONST_AGENDA:
         action = protocol(state,observations)
         if action >= 0 and action < 8 and protocol != advancePrompts:
