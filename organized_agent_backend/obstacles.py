@@ -5,7 +5,6 @@ from .gamestate import CONST_DESPERATION_RATE
 from .proceed import pathfind
 
 def evaluateObstacles(state, observations):
-	# TODO: Re-implement procedures to deal with locked doors
 	if(state.desperation < CONST_DESPERATION_RATE):
 		state.incrementDesperation()
 	action = gropeForDoors(state, observations, state.desperation)

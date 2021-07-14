@@ -2,13 +2,22 @@
 
 # These lists contain glyph numbers that correspond to items that have a common usage
 
+# "Lockpicks" = items which can help you get past locked doors
+
 lockpicks = [2103, 2104]
+
+# "Blinds" = items that can induce controllable blindness (to kill Floating Eyes and stuff)
 
 blinds = [2114, 2115]
 
+# "Permafood" = food that doesn't have an expiration date
 permafood = [1299, 2148, 2149, 2150, 2151, 2158, 2159, 2160, 2161, 2162, 2163, 2164, 2166, 2168, 2170, 2172, 2173, 2174, 2175, 2176, 2177]
 
-worthTaking = [1299, 2103, 2104, 2114, 2115, 2148, 2149, 2150, 2151, 2158, 2159, 2160, 2161, 2162, 2163, 2164, 2166, 2168, 2170, 2172, 2173, 2174, 2175, 2176, 2177]
+# "Basic projectiles" = projectile weapons that don't require a launcher to adequately use
+# TODO: Implement aklys use. (It has a tether which limits it to a range of 4 tiles.)
+basicProjectiles = [1913, 1916, 1917, 1918, 1919, 1920, 1921, 1922, 1923, 1924, 1925, 1926, 1929, 1930, 1931, 1932, 1968]
+
+worthTaking = lockpicks + blinds + permafood + basicProjectiles
 
 # These are two parallel arrays indexing the glyph IDs of every item, and giving their visible name.
 # This way, the agent can look in this table to figure out what's what, when it sees "you see here a <thing>"

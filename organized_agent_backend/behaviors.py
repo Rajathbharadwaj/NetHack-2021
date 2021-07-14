@@ -5,6 +5,7 @@ from .inventory import *
 from .annoyances import resolveAnnoyances
 from .proceed import searchAndProceed, pathfind
 from .obstacles import evaluateObstacles
+from .ranged_combat import fightAtRange
 
 CONST_TREAT_UNKNOWN_AS_PASSABLE = True # I've never yet set this to false but I'm keeping the option right now – you never know
 
@@ -121,6 +122,7 @@ CONST_AGENDA = [advancePrompts,
     considerDescendingStairs,
     checkForEmergencies,
     fightInMelee,
+    fightAtRange,
     routineCheckup,
     resolveAnnoyances,
     searchAndProceed,

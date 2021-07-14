@@ -20,7 +20,8 @@ isPassable = {
     "-" : True,
     "s" : False,
     "+" : False,
-    ">" : True
+    ">" : True,
+    "p" : True
 }
 
 numericCompass = [
@@ -105,6 +106,7 @@ keyLookup = {
     "+" : 97,
     "-" : 98,
     " " : 99,
+    "*" : 76,
     #"}" : 19, # represents enter ("}" serves no inherent purpose in nethack)
     #"{" : -1, # special character; represents an open slot in the queue
     "$" : 112 # Added to NLE after the fact

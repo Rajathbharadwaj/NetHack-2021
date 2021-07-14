@@ -3,9 +3,10 @@
 from .utilities import *
 
 def searchAndProceed(state, observations):
+	# TODO: Look for an item nearby and if there is one prioritize it
 	return pathfind(state, observations)[0]
 
-def pathfind(state, observations, target="$>?", permeability=isPassable):
+def pathfind(state, observations, target="$>?", permeability=isPassable, searchRange=-1):
 	# Uses Dijkstra's algorithm to get to the nearest space that's marked as one of the items in target
 	# TODO: Fix the fact that this function has the brain of a gridbug (doesn't move diagonally)
 	row = readHeroRow(observations)
@@ -17,15 +18,19 @@ def pathfind(state, observations, target="$>?", permeability=isPassable):
 	investigated = []
 	queue = []
 	howToReach = []
+	distance = []
 	
 	for j in range(21):
 		rowArray = []
 		reachedRowArray = []
+		distArray = []
 		for k in range(79):
 			rowArray.append(False) 
 			reachedRowArray.append(None) # if somehow this gets returned we want to crash
+			distArray.append(0)
 		investigated.append(rowArray)
 		howToReach.append(reachedRowArray) # what moves can take you to this space
+		distance.append(distArray)
 		
 	queue.append([row, col])
 	
@@ -37,7 +42,9 @@ def pathfind(state, observations, target="$>?", permeability=isPassable):
 			continue # if this path was faster we'd have investigated it before the other path
 	
 		investigated[currRow][currCol] = True
-	
+		
+		if searchRange != -1 and searchRange < distance[currRow][currCol]:
+			return -1, ""
 	
 		# check south
 		if currRow < 20 and target.count(state.readMap(currRow+1,currCol)) > 0:
@@ -48,6 +55,7 @@ def pathfind(state, observations, target="$>?", permeability=isPassable):
 		if currRow < 20 and permeability[state.readMap(currRow+1,currCol)]:
 			if howToReach[currRow+1][currCol] == None and not investigated[currRow+1][currCol]:
 				queue.append([currRow+1,currCol])
+				distance[currRow+1][currCol] = distance[currRow][currCol] + 1
 				if howToReach[currRow][currCol] == None:
 					howToReach[currRow+1][currCol] = 2
 				else:
@@ -62,6 +70,7 @@ def pathfind(state, observations, target="$>?", permeability=isPassable):
 		if currCol < 78 and permeability[state.readMap(currRow,currCol+1)]:
 			if howToReach[currRow][currCol+1] == None and not investigated[currRow][currCol+1]:
 				queue.append([currRow,currCol+1])
+				distance[currRow][currCol+1] = distance[currRow][currCol] + 1
 				if howToReach[currRow][currCol] == None:
 					howToReach[currRow][currCol+1] = 1
 				else:
@@ -76,6 +85,7 @@ def pathfind(state, observations, target="$>?", permeability=isPassable):
 		if currRow > 0 and permeability[state.readMap(currRow-1,currCol)]:
 			if howToReach[currRow-1][currCol] == None and not investigated[currRow-1][currCol]:
 				queue.append([currRow-1,currCol])
+				distance[currRow-1][currCol] = distance[currRow][currCol] + 1
 				if howToReach[currRow][currCol] == None:
 					howToReach[currRow-1][currCol] = 0
 				else:
@@ -90,6 +100,7 @@ def pathfind(state, observations, target="$>?", permeability=isPassable):
 		if currCol > 0 and permeability[state.readMap(currRow,currCol-1)]:
 			if howToReach[currRow][currCol-1] == None and not investigated[currRow][currCol-1]:
 				queue.append([currRow,currCol-1])
+				distance[currRow][currCol-1] = distance[currRow][currCol] + 1
 				if howToReach[currRow][currCol] == None:
 					howToReach[currRow][currCol-1] = 3
 				else:

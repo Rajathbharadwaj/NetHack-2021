@@ -56,6 +56,7 @@ class Gamestate(object):
             self.statusReport(observations)
         if dlvl != self.lastKnownLevel:
             # Don't update the map on the step level changes; NLE is wack on that step
+            # I think that's actually fixed now? Eh, whatever
             self.resetDesperation()
             self.lastKnownLevel = dlvl
             self.itemUnderfoot = ""
@@ -142,6 +143,7 @@ class Gamestate(object):
         # If this square is a dead end, defined as a square cardinally adjacent to exactly one non-wall square,
         # it's extremely likely there's a secret passage there.
         # That being the case, it merits checking extra times, so we only increment by a fraction.
+        # FIXME: Check hero position, not square position.
         nearbyNonWalls = 0
         if row > 0 and self.dmap[dlvl][row-1][col] != "X":
             nearbyNonWalls += 1
@@ -232,6 +234,8 @@ def updateMainMapSquare(previousMarking, observedGlyph, observedChar, heroXDist,
         return "`"
     if observedGlyph == 2376: # Iron bars
        return "#"
+    if observedGlyph >= 381 and observedGlyph <= 761: # Pet
+        return "p"
     if observedGlyph == 28: # Floating eye
         return "e"
     if heroXDist == 0 and heroYDist == 0: # War, the outcast Rider (marked on map mostly for the sake of printing to screen)

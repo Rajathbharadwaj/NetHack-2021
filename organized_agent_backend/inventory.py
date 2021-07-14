@@ -6,6 +6,8 @@
 from .items import *
 from .gamestate import *
 
+# TODO: Add a function that tells you what weapon is wielded
+
 def searchInventory(observations, desired):
 	# Look in the inventory for an item whose glyph number is one of the ones in desired
 	# If one or more is found, report their inventory slots and which glyph they are
