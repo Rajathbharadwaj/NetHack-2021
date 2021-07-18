@@ -4,6 +4,22 @@ from .inventory import *
 from .items import *
 
 def resolveAnnoyances(state, observations):
+	# First, let's look at our troubles
+	"""
+	x = 0
+	while x < len(state.troubles):
+		action, isFixed = state.troubles[x](state, observations)
+		if isFixed:
+			# Remove the trouble
+			# The next trouble after it moves back into the newly freed index x,
+			# so we needn't increment x
+			state.troubles = state.troubles[:x] + state.troubles[x+1:]
+		else:
+			x += 1
+		if action != -1:
+			return action
+	"""
+	# Now for a couple miscellaneous things worth checking
 	action = butcherFloatingEyes(state, observations)
 	if action == -1:
 		action = pickLocks(state, observations)
@@ -93,3 +109,35 @@ def pickLocks(state, observations):
 	# Locked door detected. Let's bust it open, shall we?
 	state.queue = [bestLockpick, direction] # "Apply what?": bestLockpick, "In what direction?": direction
 	return 24 # apply
+
+
+# Now we get into functions that I'll call "troubles".
+# These represent problems that will persist until otherwise stated.
+# Each one should take state and observations as input, in that order
+# And each one should return two numbers – recommended action, and a bool saying whether or not the problem is solved
+# We'll keep track of them by adding trouble functions to a special array in the gamestate
+
+def handleLycanthropy(state, observations):
+	# (Holy water is more versatile than wolfsbane,
+	# so given the choice we'll use the wolfsbane and conserve the holy water)
+	handyWolfsbane = searchInventory(observations, [2164])[0][0]
+	if handyWolfsbane != -1:
+		state.queue = [handyWolfsbane]
+		return 35, True # Eat the wolfsbane – problem solved
+	# No wolfsbane. Ok, maybe we have holy water?
+	waterLetters, trashcan, waterIndices = searchInventory(observations, [2203])
+	
+	# These arrays represent all the water in our inventory,
+	# regardless of beatitude. So, we'll need to check
+	# for holy water specifically.
+	
+	for x in range(len(waterIndices)):
+		if readBUC(observations["inv_strs"][x]) == "b":
+			state.queue = waterLetters[x]
+			return 64, True # Quaff the holy water – problem solved
+	
+	# No definitive cure found in our inventory.
+	# At this time I have no interest in quaffing unidentified water hoping it's holy,
+	# so I guess we just have to put up with lycanthropy for now.
+	
+	return -1, False # No recommendation – problem lingers

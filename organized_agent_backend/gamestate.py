@@ -1,6 +1,7 @@
 import numpy as np
 
 from .utilities import *
+from .annoyances import * # for the purpose of tracking troubles
 
 CONST_QUIET = False # Enable to silence all prints about gamestate
 CONST_DEAD_END_MULT = 3 # Multiply the number of times dead end squares get searched by this value
@@ -23,6 +24,7 @@ class Gamestate(object):
         self.desperation = 0 # controls behavior when there's no obvious path forward
         self.itemUnderfoot = ""
         self.stepsTaken = 0
+        self.troubles = []
     
     def reset(self):
         """ INITIALIZE MAP """
@@ -37,6 +39,7 @@ class Gamestate(object):
         self.queue = []
         self.itemUnderfoot = ""
         self.stepsTaken = 0
+        self.troubles = []
     
     def popFromQueue(self):
         if len(self.queue) == 0:
@@ -87,6 +90,9 @@ class Gamestate(object):
                     currCol = col + y - vision # the col of the square we're about to update
                     glyph, char = readSquare(observations, x, y)
                     self.dmap[dlvl][currRow][currCol] = updateMainMapSquare(dmap[dlvl][x][y], glyph, char, heroXDist, heroYDist, message)
+        #if message.find("You feel feverish") != -1:
+        #    self.troubles.append(handleLycanthropy)
+        #    print("\"" + message + "\"")
         if message.find("This door is locked.") != -1:
             # Figure out which door it was referring to
             # If the hero is stunned or confused, we might mark the wrong square, but it'll be corrected on the next update
@@ -121,23 +127,45 @@ class Gamestate(object):
         row = self.lastKnownRow
         col = self.lastKnownCol
         dlvl = self.lastKnownLevel
+        nearbyNonWalls = 0
+        if row > 0 and self.dmap[dlvl][row-1][col] != "X":
+            nearbyNonWalls += 1
+        if row < 20 and self.dmap[dlvl][row+1][col] != "X":
+            nearbyNonWalls += 1
+        if col > 0 and self.dmap[dlvl][row][col-1] != "X":
+            nearbyNonWalls += 1
+        if col < 78 and self.dmap[dlvl][row][col+1] != "X":
+            nearbyNonWalls += 1
+            
+        if nearbyNonWalls == 1:
+            incrementBy = 1/CONST_DEAD_END_MULT
+        else:
+            incrementBy = 1
         self.updateSearchedMapSquare(dlvl, row, col)
         if row > 0:
-            self.updateSearchedMapSquare(dlvl, row-1, col)
+            #self.updateSearchedMapSquare(dlvl, row-1, col)
+            self.searchMap[dlvl][row-1][col] += incrementBy
         if row < 20:
-            self.updateSearchedMapSquare(dlvl, row+1, col)
+            #self.updateSearchedMapSquare(dlvl, row+1, col)
+            self.searchMap[dlvl][row+1][col] += incrementBy
         if col > 0:
-            self.updateSearchedMapSquare(dlvl, row, col-1)
+            #self.updateSearchedMapSquare(dlvl, row, col-1)
+            self.searchMap[dlvl][row][col-1] += incrementBy
         if col < 78:
-            self.updateSearchedMapSquare(dlvl, row, col+1)
+            #self.updateSearchedMapSquare(dlvl, row, col+1)
+            self.searchMap[dlvl][row][col+1] += incrementBy
         if row > 0 and col > 0:
-            self.updateSearchedMapSquare(dlvl, row-1, col-1)
+            #self.updateSearchedMapSquare(dlvl, row-1, col-1)
+            self.searchMap[dlvl][row-1][col-1] += incrementBy
         if row > 0 and col < 78:
-            self.updateSearchedMapSquare(dlvl, row-1, col+1)
+            #self.updateSearchedMapSquare(dlvl, row-1, col+1)
+            self.searchMap[dlvl][row-1][col+1] += incrementBy
         if row < 20 and col > 0:
-            self.updateSearchedMapSquare(dlvl, row+1, col-1)
+            #self.updateSearchedMapSquare(dlvl, row+1, col-1)
+            self.searchMap[dlvl][row+1][col-1] += incrementBy
         if row < 20 and col < 78:
-            self.updateSearchedMapSquare(dlvl, row+1, col+1)
+            #self.updateSearchedMapSquare(dlvl, row+1, col+1)
+            self.searchMap[dlvl][row+1][col+1] += incrementBy
         return
     def updateSearchedMapSquare(self, dlvl, row, col):
         # If this square is a dead end, defined as a square cardinally adjacent to exactly one non-wall square,
@@ -216,7 +244,7 @@ def updateMainMapSquare(previousMarking, observedGlyph, observedChar, heroXDist,
         return previousMarking # Don't overwrite the stairs
     if previousMarking == "s":
         return previousMarking # If shopkeep didn't let you in before they won't let you in now
-    if observedGlyph >= 2360 and observedGlyph <= 2369: # Explicit wall, such as the ones around rooms
+    if observedGlyph >= 2360 and observedGlyph <= 2370: # Explicit wall, such as the ones around rooms
         return "X"
     if observedGlyph == 2359:
         if isNearHero: # "Solid stone"; acts identically to walls
@@ -245,7 +273,7 @@ def updateMainMapSquare(previousMarking, observedGlyph, observedChar, heroXDist,
     if observedGlyph >= 1144 and observedGlyph <= 1524 and (previousMarking == "?" or previousMarking == "^"):
         return "^" # A corpse you just find laying around is very likely a trap
     if (observedGlyph >= 1907 and observedGlyph <= 2352) or (observedGlyph >= 1144 and observedGlyph <= 1524):
-        if previousMarking != "@" and previousMarking != "-":
+        if previousMarking != "@" and previousMarking != "-" and previousMarking != "~":
             # Ooh, loot! We should take a closer look...
             return "$"
         else:

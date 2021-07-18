@@ -10,8 +10,8 @@ lockpicks = [2103, 2104]
 
 blinds = [2114, 2115]
 
-# "Permafood" = food that doesn't have an expiration date
-permafood = [1299, 2148, 2149, 2150, 2151, 2158, 2159, 2160, 2161, 2162, 2163, 2164, 2166, 2168, 2170, 2172, 2173, 2174, 2175, 2176, 2177]
+# "Permafood" = food that doesn't have an expiration date (and that we can't really use for any other purpose)
+permafood = [1299, 2148, 2149, 2150, 2151, 2158, 2159, 2160, 2161, 2162, 2163, 2166, 2168, 2170, 2172, 2173, 2174, 2175, 2176, 2177]
 
 # "Basic projectiles" = projectile weapons that don't require a launcher to adequately use
 # TODO: Implement aklys use. (It has a tether which limits it to a range of 4 tiles.)
