@@ -2,11 +2,10 @@ import numpy as np
 
 from .utilities import *
 from .annoyances import * # for the purpose of tracking troubles
+from .narration import CONST_QUIET, CONST_STATUS_UPDATE_PERIOD, CONST_PRINT_MAP_DURING_FLOOR_TRANSITION
 
-CONST_QUIET = False # Enable to silence all prints about gamestate
 CONST_DEAD_END_MULT = 3 # Multiply the number of times dead end squares get searched by this value
 CONST_DESPERATION_RATE = 3 # Amount by which to increment desperation
-CONST_STATUS_UPDATE_PERIOD = 500 # Print the map out every <#> steps
 
 class Gamestate(object):
 
@@ -25,8 +24,17 @@ class Gamestate(object):
         self.itemUnderfoot = ""
         self.stepsTaken = 0
         self.troubles = []
+        self.narrationStatus = {
+            "report_timer" : CONST_STATUS_UPDATE_PERIOD,
+            "quit_game" : False,
+            "hp_threshold" : 0, # 1 means agent reached half health, 2 means agent reached quarter health. Resets to 0 when healed to full health.
+            "hunger_threshold" : 0 # Tracks hunger severity, we want to print exactly once when we reach Weak status
+        }
     
     def reset(self):
+        # Before we wipe the slate clean, we should dump core if we haven't already
+        if not CONST_QUIET and not self.narrationStatus["quit_game"]:
+            self.coreDump("The agent dies...")
         """ INITIALIZE MAP """
         self.dmap = makeEmptyMap(30, "?")
         self.searchMap = makeEmptyMap(30, 0)
@@ -40,6 +48,12 @@ class Gamestate(object):
         self.itemUnderfoot = ""
         self.stepsTaken = 0
         self.troubles = []
+        self.narrationStatus = {
+            "report_timer" : CONST_STATUS_UPDATE_PERIOD,
+            "quit_game" : False,
+            "hp_threshold" : 0,
+            "hunger_threshold" : 0
+        }
     
     def popFromQueue(self):
         if len(self.queue) == 0:
@@ -55,17 +69,20 @@ class Gamestate(object):
         # TODO: Mark open doorways. I don't plan to try to close them, but we can't move diagonally through open doorways
         dlvl = readDungeonLevel(observations)
         self.stepsTaken += 1
-        if self.stepsTaken % CONST_STATUS_UPDATE_PERIOD == 0:
-            self.statusReport(observations)
+        # functionality moved to narration.py 
+        #if self.stepsTaken % CONST_STATUS_UPDATE_PERIOD == 0:
+        #    self.statusReport(observations)
         if dlvl != self.lastKnownLevel:
             # Don't update the map on the step level changes; NLE is wack on that step
             # I think that's actually fixed now? Eh, whatever
             self.resetDesperation()
-            self.lastKnownLevel = dlvl
-            self.itemUnderfoot = ""
             if not CONST_QUIET:
+                if CONST_PRINT_MAP_DURING_FLOOR_TRANSITION:
+                    self.printMap()
                 print("Now entering floor ", end="")
                 print(dlvl+1)
+            self.lastKnownLevel = dlvl
+            self.itemUnderfoot = ""
             return
         row = readHeroRow(observations)
         col = readHeroCol(observations)
@@ -171,7 +188,7 @@ class Gamestate(object):
         # If this square is a dead end, defined as a square cardinally adjacent to exactly one non-wall square,
         # it's extremely likely there's a secret passage there.
         # That being the case, it merits checking extra times, so we only increment by a fraction.
-        # FIXME: Check hero position, not square position.
+        # This function is deprecated and will probably just be deleted soon, because it flat-out works wrong.
         nearbyNonWalls = 0
         if row > 0 and self.dmap[dlvl][row-1][col] != "X":
             nearbyNonWalls += 1
@@ -190,8 +207,9 @@ class Gamestate(object):
     def statusReport(self, observations):
         self.printMap()
         print("\"" + readMessage(observations) + "\"\n")
+        self.narrationStatus["report_timer"] = CONST_STATUS_UPDATE_PERIOD
         
-    def coreDump(self, message, observations):
+    def coreDump(self, message, observations=None):
         # TODO
         # Something went wrong, and we need to figure out what
         # Vomit as much information as possible about the known gamestate
@@ -200,25 +218,29 @@ class Gamestate(object):
         print(message)
         self.printMap()
         print("")
-        for x in range(21):
-            for y in range(79):
-                print(self.readSearchedMap(x, y),end=" ")
-            print("") # end line of printout
-        print("")
+        if self.narrationStatus["quit_game"]:
+            # We panicked, so let's show the "searched" table
+            for x in range(21):
+                for y in range(79):
+                    print(self.readSearchedMap(x, y),end=" ")
+                print("") # end line of printout
+            print("")
     def incrementDesperation(self):
         self.desperation += CONST_DESPERATION_RATE
         return
     def resetDesperation(self):
         self.desperation = 0
         return
-    def printMap(self):
+    def printMap(self, dlvl=-1):
         if CONST_QUIET:
             return
+        if dlvl == -1:
+            dlvl = self.lastKnownLevel
         print("Current map of floor ", end="")
-        print(self.lastKnownLevel+1)
-        for x in range(len(self.dmap[self.lastKnownLevel])):
-            for y in range(len(self.dmap[self.lastKnownLevel][x])):
-                print(self.dmap[self.lastKnownLevel][x][y],end="")
+        print(dlvl+1)
+        for x in range(len(self.dmap[dlvl])):
+            for y in range(len(self.dmap[dlvl][x])):
+                print(self.dmap[dlvl][x][y],end="")
             print("") # end line of printout
         print("")
     
@@ -237,6 +259,8 @@ def makeEmptyMap(depth,default):
     return dungeon
 
 def updateMainMapSquare(previousMarking, observedGlyph, observedChar, heroXDist, heroYDist, message):
+    # TODO: If we're blind, we should handle this function quite differently.
+        # We should keep previously marked monsters marked since they're probably still there
     isNearHero = (heroXDist <= 1 and heroYDist <= 1)
     isLockedOut = (message.find("This door is locked.") != -1)
     isUnlockedNow = (message.find("You succeed in picking the lock.") != -1)
@@ -251,6 +275,12 @@ def updateMainMapSquare(previousMarking, observedGlyph, observedChar, heroXDist,
             return "X"
         else:
             return previousMarking # Unobserved; don't update map
+            # TODO: There is actually an odd interaction here that needs to be reviewed.
+            # If we see a square that was labelled on our map as "&" (monster) reach here, that could mean one of two things.
+                # Either we lost visual on the monster (in which case it's probably still there)
+                # Or it's a monster that can walk through walls (in which case it's probably NOT still there)
+            # Unfortunately I'm not sure how to tell these two cases apart
+            # But fortunately we don't yet often encounter monsters that walk through walls
     if observedChar == 62 or message.find("You see here stairs leading down.") != -1: # Stairs (or, maybe, a ladder) leading downward
         return ">"
     if (observedGlyph == 2374 or observedGlyph == 2375): # Door, either horizontal or vertical

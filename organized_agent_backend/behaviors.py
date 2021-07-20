@@ -6,6 +6,7 @@ from .annoyances import resolveAnnoyances
 from .proceed import searchAndProceed, pathfind
 from .obstacles import evaluateObstacles
 from .ranged_combat import fightAtRange
+from .narration import narrateGame, CONST_QUIET
 
 CONST_TREAT_UNKNOWN_AS_PASSABLE = True # I've never yet set this to false but I'm keeping the option right now – you never know
 
@@ -16,6 +17,7 @@ def chooseAction(state, observations):
     # For organization's sake, it really shouldn't be much more complicated than "call function, see if it returned an action, repeat"
     state.updateMap(observations)
     handleItemUnderfoot(state, observations)
+    narrateGame(state, observations)
     action = state.popFromQueue()
     if action != -1:
         return action
@@ -24,10 +26,16 @@ def chooseAction(state, observations):
     #    return 65
     for protocol in CONST_AGENDA:
         action = protocol(state,observations)
+        if action == None:
+            print("Fatal error: Protocol didn't return anything.")
+            print("Protocol at fault: ",end="")
+            print(protocol)
+            exit()
         if action >= 0 and action < 8 and protocol != advancePrompts:
             state.lastDirection = numericCompass[action]
         if action != -1:
             return action
+    state.narrationStatus["quit_game"] = True
     state.coreDump("Agent has panicked! (Its logic gives it no move to make.)",observations)
     state.queue = [7]
     return 65 # Quit, then next step, answer yes to "are you sure?"
