@@ -80,32 +80,14 @@ def checkForEmergencies(state, observations):
     return -1
 
 def fightInMelee(state, observations):
-    heroRow = readHeroRow(observations)
-    heroCol = readHeroCol(observations)
-    if heroRow > 0 and state.readMap(heroRow-1,heroCol) == "&":
-        state.queue = [0] # north
-        return 40
-    if heroRow < 20 and state.readMap(heroRow+1,heroCol) == "&":
-        state.queue = [2] # south
-        return 40
-    if heroCol > 0 and state.readMap(heroRow,heroCol-1) == "&":
-        state.queue = [3] # west
-        return 40
-    if heroCol < 78 and state.readMap(heroRow,heroCol+1) == "&":
-        state.queue = [1] # east
-        return 40
-    if heroRow > 0 and heroCol > 0 and state.readMap(heroRow-1,heroCol-1) == "&":
-        state.queue = [7] # northwest
-        return 40
-    if heroRow < 20 and heroCol > 0 and state.readMap(heroRow+1,heroCol-1) == "&":
-        state.queue = [6] # southwest
-        return 40
-    if heroRow > 0 and heroCol < 78 and state.readMap(heroRow-1,heroCol+1) == "&":
-        state.queue = [4] # northeast
-        return 40
-    if heroRow < 20 and heroCol < 78 and state.readMap(heroRow+1,heroCol+1) == "&":
-        state.queue = [5] # southeast
-        return 40
+    dirs = iterableOverVicinity(observations,True)
+    for x in range(8):
+        if dirs[x] == None:
+            continue # out of bounds
+        row, col, str = dirs[x]
+        if state.readMap(row,col) == "&":
+            state.queue = [x] # direction of monster
+            return 40 # fight
     return -1
 
 def routineCheckup(state, observations):

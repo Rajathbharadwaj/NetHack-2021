@@ -2,6 +2,7 @@
 
 from .inventory import *
 from .items import *
+from .narration import CONST_QUIET
 
 def resolveAnnoyances(state, observations):
 	# First, let's look at our troubles
@@ -36,36 +37,23 @@ def butcherFloatingEyes(state, observations):
 	direction = -1
 	heroRow = readHeroRow(observations)
 	heroCol = readHeroCol(observations)
-	if heroRow > 0 and state.readMap(heroRow-1,heroCol) == "e":
-		state.lastDirection = "N"
-		direction = 0 # north
-	if heroRow < 20 and state.readMap(heroRow+1,heroCol) == "e":
-		state.lastDirection = "S"
-		direction = 2 # south
-	if heroCol > 0 and state.readMap(heroRow,heroCol-1) == "e":
-		state.lastDirection = "W"
-		direction = 3 # west
-	if heroCol < 78 and state.readMap(heroRow,heroCol+1) == "e":
-		state.lastDirection = "E"
-		direction = 1 # east
-	if heroRow > 0 and heroCol > 0 and state.readMap(heroRow-1,heroCol-1) == "e":
-		state.lastDirection = "NW"
-		direction = 7 # northwest
-	if heroRow < 20 and heroCol > 0 and state.readMap(heroRow+1,heroCol-1) == "e":
-		state.lastDirection = "SW"
-		direction = 6 # southwest
-	if heroRow > 0 and heroCol < 78 and state.readMap(heroRow-1,heroCol+1) == "e":
-		state.lastDirection = "NE"
-		direction = 4 # northeast
-	if heroRow < 20 and heroCol < 78 and state.readMap(heroRow+1,heroCol+1) == "e":
-		state.lastDirection = "SE"
-		direction = 5 # southeast
+	dirs = iterableOverVicinity(observations,True)
+	for x in range(4): # TODO: Go to gamestate.py and handle the TODO labelled "RODNEY"; then, come back and change this to range(8).
+		if dirs[x] == None:
+			continue # out of bounds
+		row, col, str = dirs[x]
+		if state.readMap(row,col) == "e":
+			if not CONST_QUIET:
+				print("Haha, agent has a blindfold! Perish, annoying floating eye!")
+			state.lastDirection = str
+			state.queue = [bestBlind, 40, x, 40, x, 69, bestBlind, 36] # "Put on what?": bestBlind, fight the eye twice, remove the blindfold
+			return 63 # put on
 	if direction == -1:
 		return -1 # No floating eye in range.
 	
 	# Floating eye target locked.
-	state.queue = [bestBlind, 40, direction, 40, direction, 69, bestBlind, 36] # "Put on what?": bestBlind, fight the eye twice, remove the blindfold
-	return 63 # put on
+	# state.queue = [bestBlind, 40, direction, 40, direction, 69, bestBlind, 36] # "Put on what?": bestBlind, fight the eye twice, remove the blindfold
+	# return 63 # put on
 
 def pickLocks(state, observations):
 	handyLockpicks, types, indices = searchInventory(observations, lockpicks)
@@ -74,41 +62,20 @@ def pickLocks(state, observations):
 	# TODO: Pick the best lockpick available if we have more than one, right now we just pick whichever comes to hand first
 	bestLockpick = keyLookup[chr(handyLockpicks[0])]
 	# OK, if we're here we have a lockpick. But, do we have a door we can pick? (Chest lockpicking WILL happen someday. Not today tho.)
-	direction = -1
 	heroRow = readHeroRow(observations)
 	heroCol = readHeroCol(observations)
-	if heroRow > 0 and state.readMap(heroRow-1,heroCol) == "+":
-		state.lastDirection = "N"
-		direction = 0 # north
-	if heroRow < 20 and state.readMap(heroRow+1,heroCol) == "+":
-		state.lastDirection = "S"
-		direction = 2 # south
-	if heroCol > 0 and state.readMap(heroRow,heroCol-1) == "+":
-		state.lastDirection = "W"
-		direction = 3 # west
-	if heroCol < 78 and state.readMap(heroRow,heroCol+1) == "+":
-		state.lastDirection = "E"
-		direction = 1 # east
-	"""
-	if heroRow > 0 and heroCol > 0 and state.readMap(heroRow-1,heroCol-1) == "+":
-		state.lastDirection = "NW"
-		direction = 7 # northwest
-	if heroRow < 20 and heroCol > 0 and state.readMap(heroRow+1,heroCol-1) == "+":
-		state.lastDirection = "SW"
-		direction = 6 # southwest
-	if heroRow > 0 and heroCol < 78 and state.readMap(heroRow-1,heroCol+1) == "+":
-		state.lastDirection = "NE"
-		direction = 4 # northeast
-	if heroRow < 20 and heroCol < 78 and state.readMap(heroRow+1,heroCol+1) == "+":
-		state.lastDirection = "SE"
-		direction = 5 # southeast
-	"""
-	if direction == -1:
-		return -1 # No locked door in range.
-	
-	# Locked door detected. Let's bust it open, shall we?
-	state.queue = [bestLockpick, direction] # "Apply what?": bestLockpick, "In what direction?": direction
-	return 24 # apply
+	dirs = iterableOverVicinity(observations,True)
+	for x in range(4): # TODO: Go to gamestate.py and handle the TODO labelled "RODNEY"; then, come back and change this to range(8).
+		if dirs[x] == None:
+			continue # out of bounds
+		row, col, str = dirs[x]
+		if state.readMap(row,col) == "+":
+			if not CONST_QUIET:
+				print("Unlocking door with lock-pick.")
+			state.lastDirection = str
+			state.queue = [bestLockpick, x] # "Apply what?": bestLockpick, "In what direction?": direction
+			return 24 # apply
+	return -1 # No locked door in range.
 
 
 # Now we get into functions that I'll call "troubles".

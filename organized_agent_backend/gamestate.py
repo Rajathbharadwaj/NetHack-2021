@@ -28,13 +28,18 @@ class Gamestate(object):
             "report_timer" : CONST_STATUS_UPDATE_PERIOD,
             "quit_game" : False,
             "hp_threshold" : 0, # 1 means agent reached half health, 2 means agent reached quarter health. Resets to 0 when healed to full health.
-            "hunger_threshold" : 0 # Tracks hunger severity, we want to print exactly once when we reach Weak status
+            "hunger_threshold" : 0, # Tracks hunger severity, we want to print exactly once when we reach Weak status
+            "weight_threshold" : 0 # Tracks encumbrance severity, we want to print exactly once when we reach Burdened status
         }
     
     def reset(self):
         # Before we wipe the slate clean, we should dump core if we haven't already
-        if not CONST_QUIET and not self.narrationStatus["quit_game"]:
-            self.coreDump("The agent dies...")
+        if not CONST_QUIET:
+            if not self.narrationStatus["quit_game"]:
+                self.coreDump("The agent dies...")
+            print("---------RIP---------")
+            print("")
+            
         """ INITIALIZE MAP """
         self.dmap = makeEmptyMap(30, "?")
         self.searchMap = makeEmptyMap(30, 0)
@@ -52,7 +57,8 @@ class Gamestate(object):
             "report_timer" : CONST_STATUS_UPDATE_PERIOD,
             "quit_game" : False,
             "hp_threshold" : 0,
-            "hunger_threshold" : 0
+            "hunger_threshold" : 0,
+            "weight_threshold" : 0
         }
     
     def popFromQueue(self):
@@ -69,9 +75,6 @@ class Gamestate(object):
         # TODO: Mark open doorways. I don't plan to try to close them, but we can't move diagonally through open doorways
         dlvl = readDungeonLevel(observations)
         self.stepsTaken += 1
-        # functionality moved to narration.py 
-        #if self.stepsTaken % CONST_STATUS_UPDATE_PERIOD == 0:
-        #    self.statusReport(observations)
         if dlvl != self.lastKnownLevel:
             # Don't update the map on the step level changes; NLE is wack on that step
             # I think that's actually fixed now? Eh, whatever
@@ -113,6 +116,8 @@ class Gamestate(object):
         if message.find("This door is locked.") != -1:
             # Figure out which door it was referring to
             # If the hero is stunned or confused, we might mark the wrong square, but it'll be corrected on the next update
+            # TODO "RODNEY": Enable diagonals
+            # When you do, don't forget to modify lockpick behavior in annoyances.py, too!
             if self.lastDirection == "N" and row > 0: # north
                 self.dmap[dlvl][row-1][col] = "+"
             if self.lastDirection == "E" and col < 78: # east
@@ -124,6 +129,8 @@ class Gamestate(object):
         if message.find("You succeed in picking the lock.") != -1:
             # Figure out which door it was referring to
             # If the hero is stunned or confused, we might mark the wrong square, but it'll be corrected on the next update
+            # TODO "RODNEY": Enable diagonals
+            # When you do, don't forget to modify lockpick behavior in annoyances.py, too!
             if self.lastDirection == "N" and row > 0: # north
                 self.dmap[dlvl][row-1][col] = "."
             if self.lastDirection == "E" and col < 78: # east
@@ -145,44 +152,26 @@ class Gamestate(object):
         col = self.lastKnownCol
         dlvl = self.lastKnownLevel
         nearbyNonWalls = 0
-        if row > 0 and self.dmap[dlvl][row-1][col] != "X":
-            nearbyNonWalls += 1
-        if row < 20 and self.dmap[dlvl][row+1][col] != "X":
-            nearbyNonWalls += 1
-        if col > 0 and self.dmap[dlvl][row][col-1] != "X":
-            nearbyNonWalls += 1
-        if col < 78 and self.dmap[dlvl][row][col+1] != "X":
-            nearbyNonWalls += 1
-            
+        dirs = iterableOverVicinity(returnDirections = True, x=row, y=col)
+        for x in range(4): # Only iterate over the cardinal directions for this
+            if dirs[x] == None:
+                continue # out of bounds
+            r, c, str = dirs[x]
+            if self.readMap(r,c) == "X":
+                nearbyNonWalls += 1
+        
         if nearbyNonWalls == 1:
             incrementBy = 1/CONST_DEAD_END_MULT
         else:
             incrementBy = 1
-        self.updateSearchedMapSquare(dlvl, row, col)
-        if row > 0:
-            #self.updateSearchedMapSquare(dlvl, row-1, col)
-            self.searchMap[dlvl][row-1][col] += incrementBy
-        if row < 20:
-            #self.updateSearchedMapSquare(dlvl, row+1, col)
-            self.searchMap[dlvl][row+1][col] += incrementBy
-        if col > 0:
-            #self.updateSearchedMapSquare(dlvl, row, col-1)
-            self.searchMap[dlvl][row][col-1] += incrementBy
-        if col < 78:
-            #self.updateSearchedMapSquare(dlvl, row, col+1)
-            self.searchMap[dlvl][row][col+1] += incrementBy
-        if row > 0 and col > 0:
-            #self.updateSearchedMapSquare(dlvl, row-1, col-1)
-            self.searchMap[dlvl][row-1][col-1] += incrementBy
-        if row > 0 and col < 78:
-            #self.updateSearchedMapSquare(dlvl, row-1, col+1)
-            self.searchMap[dlvl][row-1][col+1] += incrementBy
-        if row < 20 and col > 0:
-            #self.updateSearchedMapSquare(dlvl, row+1, col-1)
-            self.searchMap[dlvl][row+1][col-1] += incrementBy
-        if row < 20 and col < 78:
-            #self.updateSearchedMapSquare(dlvl, row+1, col+1)
-            self.searchMap[dlvl][row+1][col+1] += incrementBy
+        
+        #self.updateSearchedMapSquare(dlvl, row, col)
+        self.searchMap[dlvl][row][col] += incrementBy
+        for x in range(8): # Now we iterate over all directions, including diagonal
+            if dirs[x] == None:
+                continue # out of bounds
+            r, c, str = dirs[x]
+            self.searchMap[dlvl][r][c] += incrementBy
         return
     def updateSearchedMapSquare(self, dlvl, row, col):
         # If this square is a dead end, defined as a square cardinally adjacent to exactly one non-wall square,
@@ -217,12 +206,19 @@ class Gamestate(object):
             return
         print(message)
         self.printMap()
-        print("")
+        # print("")
         if self.narrationStatus["quit_game"]:
             # We panicked, so let's show the "searched" table
             for x in range(21):
                 for y in range(79):
-                    print(self.readSearchedMap(x, y),end=" ")
+                    #print(self.readSearchedMap(x, y),end=" ")
+                    if self.readSearchedMap(x, y) == 0:
+                        print(" ",end="")
+                        continue
+                    if self.readSearchedMap(x, y) <= 30:
+                        print("s",end="")
+                        continue
+                    print("S",end="")
                 print("") # end line of printout
             print("")
     def incrementDesperation(self):

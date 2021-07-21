@@ -129,3 +129,102 @@ def readSquare(observations, row, col):
     glyph = observations["glyphs"][row][col]
     char = observations["chars"][row][col]
     return glyph, char
+
+def iterableOverVicinity(observations = [], returnDirections = False, x = -1, y = -1):
+    # There are several situations where we want to check the eight squares surrounding us for some purpose or other.
+    # This is
+    # Kind of a pain to do, and very susceptible to copy-paste errors.
+    # So let's functionize it! :D
+    
+    # This returns an iterable over the directions, with the following characteristics:
+        # Type: Array
+        # Shape: 8x2, with a couple exceptions:
+            # if returnDirections is true, it's 8x3
+            # some directions may be invalid if we're at map edge; if so, those elements are None instead of an array
+        # The first value in each pair is the row, and the second is the column
+        # The third, if requested, is the string to feed to the last known direction variable
+    # Sorted by action number – array[0] is interacted with using action 0, array[1] using action 1, etc
+    
+    from .narration import CONST_QUIET
+    
+    output = []
+    if observations != []:
+        heroRow = readHeroRow(observations)
+        heroCol = readHeroCol(observations)
+    if x != -1:
+        heroRow = x
+    if y != -1:
+        heroCol = y
+    
+    if (x != -1) == (observations != []) and not CONST_QUIET:
+        print("Error code 666A – something that called function \"iterableOverVicinity\" gave it inconsistent arguments!")
+    if (x != -1) != (y != -1) and not CONST_QUIET:
+        print("Error code 666B – something that called function \"iterableOverVicinity\" gave it inconsistent arguments!")
+    
+    if heroRow > 0:
+        if returnDirections:
+            output.append([heroRow-1, heroCol, "N"])
+        else:
+            output.append([heroRow-1, heroCol])
+    else:
+        output.append(None)
+    
+    if heroCol < 78:
+        if returnDirections:
+            output.append([heroRow, heroCol+1, "E"])
+        else:
+            output.append([heroRow, heroCol+1])
+    else:
+        output.append(None)
+    
+    if heroRow < 20:
+        if returnDirections:
+            output.append([heroRow+1, heroCol, "S"])
+        else:
+            output.append([heroRow+1, heroCol])
+    else:
+        output.append(None)
+    
+    if heroCol > 0:
+        if returnDirections:
+            output.append([heroRow, heroCol-1, "W"])
+        else:
+            output.append([heroRow, heroCol-1])
+    else:
+        output.append(None)
+    
+    if heroRow > 0 and heroCol < 78:
+        if returnDirections:
+            output.append([heroRow-1, heroCol+1, "NE"])
+        else:
+            output.append([heroRow-1, heroCol+1])
+    else:
+        output.append(None)
+    
+    if heroRow < 20 and heroCol < 78:
+        if returnDirections:
+            output.append([heroRow+1, heroCol+1, "SE"])
+        else:
+            output.append([heroRow+1, heroCol+1])
+    else:
+        output.append(None)
+    
+    if heroRow < 20 and heroCol > 0:
+        if returnDirections:
+            output.append([heroRow+1, heroCol-1, "SW"])
+        else:
+            output.append([heroRow+1, heroCol-1])
+    else:
+        output.append(None)
+    
+    if heroRow > 0 and heroCol > 0:
+        if returnDirections:
+            output.append([heroRow-1, heroCol-1, "NW"])
+        else:
+            output.append([heroRow-1, heroCol-1])
+    else:
+        output.append(None)
+        
+    if len(output) != 8 and not CONST_QUIET:
+        print("Error code 1337 – function \"iterableOverDirs\" (utilities.py) returned wrong-sized array!")
+    return output

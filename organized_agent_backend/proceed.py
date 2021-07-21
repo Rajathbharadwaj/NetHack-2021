@@ -45,66 +45,29 @@ def pathfind(state, observations, target="$>?", permeability=isPassable, searchR
 		
 		if searchRange != -1 and searchRange < distance[currRow][currCol]:
 			return -1, ""
-	
-		# check south
-		if currRow < 20 and target.count(state.readMap(currRow+1,currCol)) > 0:
-			firstAction = howToReach[currRow][currCol]
-			if firstAction == None:
-				return 2, state.readMap(currRow+1,currCol)
-			return firstAction, state.readMap(currRow+1,currCol)
-		if currRow < 20 and permeability[state.readMap(currRow+1,currCol)]:
-			if howToReach[currRow+1][currCol] == None and not investigated[currRow+1][currCol]:
-				queue.append([currRow+1,currCol])
-				distance[currRow+1][currCol] = distance[currRow][currCol] + 1
+		
+		dirs = iterableOverVicinity(x=currRow,y=currCol)
+		for x in range(4): # Only iterate over the cardinal directions
+			# Why do we only iterate over the cardinal directions, you ask?
+			# Mostly cuz I'm scared of the agent trying to squeeze diagonally through walls and getting stuck
+			# It can be solved tho, I just haven't done it yet
+			# so uh... TODO
+			if dirs[x] == None:
+				continue # out of bounds
+			r, c = dirs[x]
+			if target.count(state.readMap(r,c)) > 0:
+				firstAction = howToReach[currRow][currCol]
+				if firstAction == None:
+					return x, state.readMap(r,c)
+				return firstAction, state.readMap(r,c)
+			if permeability[state.readMap(r,c)]:
+				if howToReach[r][c] == None and not investigated[r][c]:
+					queue.append([r,c])
+					distance[r][c] = distance[currRow][currCol] + 1
 				if howToReach[currRow][currCol] == None:
-					howToReach[currRow+1][currCol] = 2
+					howToReach[r][c] = x
 				else:
-					howToReach[currRow+1][currCol] = howToReach[currRow][currCol]
-					
-		# check east
-		if currCol < 78 and target.count(state.readMap(currRow,currCol+1)) > 0:
-			firstAction = howToReach[currRow][currCol]
-			if firstAction == None:
-				return 1, state.readMap(currRow,currCol+1)
-			return firstAction, state.readMap(currRow,currCol+1)
-		if currCol < 78 and permeability[state.readMap(currRow,currCol+1)]:
-			if howToReach[currRow][currCol+1] == None and not investigated[currRow][currCol+1]:
-				queue.append([currRow,currCol+1])
-				distance[currRow][currCol+1] = distance[currRow][currCol] + 1
-				if howToReach[currRow][currCol] == None:
-					howToReach[currRow][currCol+1] = 1
-				else:
-					howToReach[currRow][currCol+1] = howToReach[currRow][currCol]
-					
-		# check north
-		if currRow > 0 and target.count(state.readMap(currRow-1,currCol)) > 0:
-			firstAction = howToReach[currRow][currCol]
-			if firstAction == None:
-				return 0, state.readMap(currRow-1,currCol)
-			return firstAction, state.readMap(currRow-1,currCol)
-		if currRow > 0 and permeability[state.readMap(currRow-1,currCol)]:
-			if howToReach[currRow-1][currCol] == None and not investigated[currRow-1][currCol]:
-				queue.append([currRow-1,currCol])
-				distance[currRow-1][currCol] = distance[currRow][currCol] + 1
-				if howToReach[currRow][currCol] == None:
-					howToReach[currRow-1][currCol] = 0
-				else:
-					howToReach[currRow-1][currCol] = howToReach[currRow][currCol]
-					
-		# check west
-		if currCol > 0 and target.count(state.readMap(currRow,currCol-1)) > 0:
-			firstAction = howToReach[currRow][currCol]
-			if firstAction == None:
-				return 3, state.readMap(currRow,currCol-1)
-			return firstAction, state.readMap(currRow,currCol-1)
-		if currCol > 0 and permeability[state.readMap(currRow,currCol-1)]:
-			if howToReach[currRow][currCol-1] == None and not investigated[currRow][currCol-1]:
-				queue.append([currRow,currCol-1])
-				distance[currRow][currCol-1] = distance[currRow][currCol] + 1
-				if howToReach[currRow][currCol] == None:
-					howToReach[currRow][currCol-1] = 3
-				else:
-					howToReach[currRow][currCol-1] = howToReach[currRow][currCol]
+					howToReach[r][c] = howToReach[currRow][currCol]	
 	# if we're here, there's no reachable target on this floor
 	# what happens next is not this function's responsibility to decide
 	return -1, ""

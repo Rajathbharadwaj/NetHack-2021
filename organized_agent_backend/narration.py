@@ -8,6 +8,7 @@
 
 from .items import *
 from .gamestate import *
+from .utilities import *
 
 CONST_QUIET = False # Enable to silence all prints about gamestate
 CONST_STATUS_UPDATE_PERIOD = 2000 # Print the map out every <#> steps
@@ -37,4 +38,14 @@ def narrateGame(state, observations):
 	if state.narrationStatus["hunger_threshold"] == 1 and observations["blstats"][21] <= 1:
 		state.narrationStatus["hunger_threshold"] = 0 # Reset the alarm to trip again later
 		print("Phew... Agent is a bit less hungry now.")
+	
+	if state.narrationStatus["weight_threshold"] == 0 and observations["blstats"][22] >= 1:
+		state.narrationStatus["weight_threshold"] = 1 # Alarm tripped, don't trip again until encumbrance is lowered
+		print("Agent is weighed down!")
+	if state.narrationStatus["weight_threshold"] == 1 and observations["blstats"][22] == 0:
+		state.narrationStatus["weight_threshold"] = 0 # Reset the alarm to trip again later
+		print("Agent is no longer weighed down.")
+	
+	if readMessage(observations).find("You feel feverish") != -1:
+		print("Agent is infected with lycanthropy!")
 		

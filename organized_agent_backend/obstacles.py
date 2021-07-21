@@ -3,6 +3,7 @@
 from .utilities import *
 from .gamestate import CONST_DESPERATION_RATE
 from .proceed import pathfind
+from .narration import CONST_QUIET
 
 def evaluateObstacles(state, observations):
 	if(state.desperation < CONST_DESPERATION_RATE):
@@ -13,30 +14,16 @@ def evaluateObstacles(state, observations):
 		action = gropeForDoors(state, observations, state.desperation)
 	heroRow = readHeroRow(observations)
 	heroCol = readHeroCol(observations)
-	if heroRow > 0 and state.readMap(heroRow-1,heroCol) == "+":
-		state.queue = [0] # north
-		return 48
-	if heroRow < 20 and state.readMap(heroRow+1,heroCol) == "+":
-		state.queue = [2] # south
-		return 48
-	if heroCol > 0 and state.readMap(heroRow,heroCol-1) == "+":
-		state.queue = [3] # west
-		return 48
-	if heroCol < 78 and state.readMap(heroRow,heroCol+1) == "+":
-		state.queue = [1] # east
-		return 48
-	if heroRow > 0 and heroCol > 0 and state.readMap(heroRow-1,heroCol-1) == "+":
-		state.queue = [7] # northwest
-		return 48
-	if heroRow < 20 and heroCol > 0 and state.readMap(heroRow+1,heroCol-1) == "+":
-		state.queue = [6] # southwest
-		return 48
-	if heroRow > 0 and heroCol < 78 and state.readMap(heroRow-1,heroCol+1) == "+":
-		state.queue = [4] # northeast
-		return 48
-	if heroRow < 20 and heroCol < 78 and state.readMap(heroRow+1,heroCol+1) == "+":
-		state.queue = [5] # southeast
-		return 48
+	dirs = iterableOverVicinity(observations,True)
+	for x in range(8):
+		if dirs[x] == None:
+			continue # out of bounds
+		row, col, str = dirs[x]
+		if state.readMap(row,col) == "+":
+			if not CONST_QUIET:
+				print("Well, I guess it's come to this. *KICKS DOWN DOOR*")
+			state.queue = [x] # appropriate direction
+			return 48 # kick
 	
 	action = pathfind(state, observations, target="+")
 	
@@ -53,28 +40,14 @@ def gropeForDoors(state, observations, desperation, permeability=isPassable):
 	# Desperation being # means search each wall within # moves # times each
 	row = readHeroRow(observations)
 	col = readHeroCol(observations)
-	
-	shouldJustSearch = False
-	if row > 0 and state.readMap(row-1, col) == "X" and state.readSearchedMap(row-1, col) < desperation:
-		shouldJustSearch = True
-	if row < 20 and state.readMap(row+1, col) == "X" and state.readSearchedMap(row+1, col) < desperation:
-		shouldJustSearch = True
-	if col > 0 and state.readMap(row, col-1) == "X" and state.readSearchedMap(row, col-1) < desperation:
-		shouldJustSearch = True
-	if col < 78 and state.readMap(row, col+1) == "X" and state.readSearchedMap(row, col+1) < desperation:
-		shouldJustSearch = True
-	if row > 0 and col > 0 and state.readMap(row-1, col-1) == "X" and state.readSearchedMap(row-1, col-1) < desperation:
-		shouldJustSearch = True
-	if row > 0 and col < 78 and state.readMap(row-1, col+1) == "X" and state.readSearchedMap(row-1, col+1) < desperation:
-		shouldJustSearch = True
-	if row < 20 and col > 0 and state.readMap(row+1, col-1) == "X" and state.readSearchedMap(row+1, col-1) < desperation:
-		shouldJustSearch = True
-	if row < 20 and col < 78 and state.readMap(row+1, col+1) == "X" and state.readSearchedMap(row+1, col+1) < desperation:
-		shouldJustSearch = True
-		
-	if shouldJustSearch:
-		state.updateSearchedMap()
-		return 75
+	dirs = iterableOverVicinity(observations)
+	for x in range(8):
+		if dirs[x] == None:
+			continue # out of bounds
+		r, c = dirs[x]
+		if state.readMap(r,c) == "X" and state.readSearchedMap(r, c) < desperation:
+			state.updateSearchedMap()
+			return 75
 	
 	investigated = []
 	queue = []
@@ -106,66 +79,28 @@ def gropeForDoors(state, observations, desperation, permeability=isPassable):
 
 		investigated[currRow][currCol] = True
 		
-	
-		# check south
-		if currRow < 20 and state.readMap(currRow+1,currCol) == "X" and state.readSearchedMap(currRow+1, currCol) < desperation:
-			firstAction = howToReach[currRow][currCol]
-			if firstAction == None:
-				return 2
-			return firstAction
-		if currRow < 20 and permeability[state.readMap(currRow+1,currCol)]:
-			if howToReach[currRow+1][currCol] == None and not investigated[currRow+1][currCol]:
-				queue.append([currRow+1,currCol])
-				distance[currRow+1][currCol] = distance[currRow][currCol]+1
+		dirs = iterableOverVicinity(x=currRow,y=currCol)
+		for x in range(4): # Only iterate over the cardinal directions
+			# So... why do we only iterate over the cardinal directions?
+			# Mostly cuz I'm scared of the agent trying to squeeze diagonally through walls and getting stuck
+			# It can be solved tho, I just haven't done it yet
+			# so uh... TODO
+			if dirs[x] == None:
+				continue # out of bounds
+			r, c = dirs[x]
+			if state.readMap(r,c) == "X" and state.readSearchedMap(r,c) < desperation:
+				firstAction = howToReach[currRow][currCol]
+				if firstAction == None:
+					return x
+				return firstAction
+			if permeability[state.readMap(r,c)]:
+				if howToReach[r][c] == None and not investigated[r][c]:
+					queue.append([r,c])
+					distance[r][c] = distance[currRow][currCol] + 1
 				if howToReach[currRow][currCol] == None:
-					howToReach[currRow+1][currCol] = 2
+					howToReach[r][c] = x
 				else:
-					howToReach[currRow+1][currCol] = howToReach[currRow][currCol]
-					
-		# check east
-		if currCol < 78 and state.readMap(currRow,currCol+1) == "X" and state.readSearchedMap(currRow, currCol+1) < desperation:
-			firstAction = howToReach[currRow][currCol]
-			if firstAction == None:
-				return 1
-			return firstAction
-		if currCol < 78 and permeability[state.readMap(currRow,currCol+1)]:
-			if howToReach[currRow][currCol+1] == None and not investigated[currRow][currCol+1]:
-				queue.append([currRow,currCol+1])
-				distance[currRow][currCol+1] = distance[currRow][currCol]+1
-				if howToReach[currRow][currCol] == None:
-					howToReach[currRow][currCol+1] = 1
-				else:
-					howToReach[currRow][currCol+1] = howToReach[currRow][currCol]
-					
-		# check north
-		if currRow > 0 and state.readMap(currRow-1,currCol) == "X" and state.readSearchedMap(currRow-1, currCol) < desperation:
-			firstAction = howToReach[currRow][currCol]
-			if firstAction == None:
-				return 0
-			return firstAction
-		if currRow > 0 and permeability[state.readMap(currRow-1,currCol)]:
-			if howToReach[currRow-1][currCol] == None and not investigated[currRow-1][currCol]:
-				queue.append([currRow-1,currCol])
-				distance[currRow-1][currCol] = distance[currRow][currCol]+1
-				if howToReach[currRow][currCol] == None:
-					howToReach[currRow-1][currCol] = 0
-				else:
-					howToReach[currRow-1][currCol] = howToReach[currRow][currCol]
-					
-		# check west
-		if currCol > 0 and state.readMap(currRow,currCol-1) == "X" and state.readSearchedMap(currRow, currCol-1) < desperation:
-			firstAction = howToReach[currRow][currCol]
-			if firstAction == None:
-				return 3
-			return firstAction
-		if currCol > 0 and permeability[state.readMap(currRow,currCol-1)]:
-			if howToReach[currRow][currCol-1] == None and not investigated[currRow][currCol-1]:
-				queue.append([currRow,currCol-1])
-				distance[currRow][currCol-1] = distance[currRow][currCol]+1
-				if howToReach[currRow][currCol] == None:
-					howToReach[currRow][currCol-1] = 3
-				else:
-					howToReach[currRow][currCol-1] = howToReach[currRow][currCol]
-					# if we're here, there's no reachable target on this floor
-					# what happens next is not this function's responsibility to decide
+					howToReach[r][c] = howToReach[currRow][currCol]
+	# if we're here, there's no reachable target on this floor
+	# what happens next is not this function's responsibility to decide
 	return -1

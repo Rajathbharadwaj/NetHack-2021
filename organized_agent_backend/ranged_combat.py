@@ -27,6 +27,10 @@ def throwProjectile(state, observations, row=-1, col=-1, isHypothetical=False):
 	maxRange = miscObjectRange(state, observations)
 	
 	# Projectile armed. Do we have a suitable target?
+	# This part will take some extra cleverness to hook up with iterableOverVicinity
+	# because we want to look farther than 1 square.
+	# It can still be done. The code will have to be made kind of weird, but it's better than this mess.
+	# TODO
 	
 	if row == -1:
 		row = readHeroRow(observations)
@@ -168,80 +172,16 @@ def alignToThrow(state, observations):
 
 	row = readHeroRow(observations)
 	col = readHeroCol(observations)
-		
-	# Check north
-	x = row - 1
-	y = col
-	trashcan, dist = throwProjectile(state, observations, x, y, True)
-	if isPassable[state.readMap(x,y)] and dist > maxDist:
-		maxDist = dist
-		currAction = 0 # move north
 	
-	# TODO: Check northeast
-		# By the way, you may be wondering why I don't just... enable this code so we can move diagonally here.
-		# It's not like it's bugged, per se...
-		# But I'm worried enabling it will cause the agent to get stuck in a pattern like this:
-		# @|
-		# -.
-		# You can only move to the "." if your encumbrance is low enough,
-		# otherwise "you're carrying too much to get through".
-		# That'd be an insta-stuck. That's bad.
-	#x = row - 1
-	#y = col + 1
-	#trashcan, dist = throwProjectile(state, observations, x, y, True)
-	#if isPassable[state.readMap(x,y)] and dist > maxDist:
-	#	maxDist = dist
-	#	currAction = 4 # move northeast
-		
-	# Check east
-	x = row 
-	y = col + 1
-	trashcan, dist = throwProjectile(state, observations, x, y, True)
-	if isPassable[state.readMap(x,y)] and dist > maxDist:
-		maxDist = dist
-		currAction = 1 # move east
-		
-	# TODO: Check southeast
-	# x = row + 1
-	# y = col + 1
-	# trashcan, dist = throwProjectile(state, observations, x, y, True)
-	# if isPassable[state.readMap(x,y)] and dist > maxDist:
-	#	maxDist = dist
-	#	currAction = 5 # move southeast
-		
-	# Check south
-	x = row + 1
-	y = col
-	trashcan, dist = throwProjectile(state, observations, x, y, True)
-	if isPassable[state.readMap(x,y)] and dist > maxDist:
-		maxDist = dist
-		currAction = 2 # move south
-		
-	# TODO: Check southwest
-	# x = row + 1
-	# y = col - 1
-	# trashcan, dist = throwProjectile(state, observations, x, y, True)
-	# if isPassable[state.readMap(x,y)] and dist > maxDist:
-	#	maxDist = dist
-	#	currAction = 6 # move southwest
-		
-	# Check west
-	x = row
-	y = col - 1
-	trashcan, dist = throwProjectile(state, observations, x, y, True)
-	if isPassable[state.readMap(x,y)] and dist > maxDist:
-		maxDist = dist
-		currAction = 3 # move west
-		
-		
-	# TODO: Check northwest
-	# x = row - 1
-	# y = col - 1
-	# trashcan, dist = throwProjectile(state, observations, x, y, True)
-	# if isPassable[state.readMap(x,y)] and dist > maxDist:
-	#	maxDist = dist
-	#	currAction = 7 # move northwest
-		
+	dirs = iterableOverVicinity(observations,True)
+	for x in range(4): # cardinal directions only (TODO: Enable diagonal movement)
+		if dirs[x] == None:
+			continue # out of bounds
+		r, c, str = dirs[x]
+		trashcan, dist = throwProjectile(state, observations, r, c, True)
+		if isPassable[state.readMap(r,c)] and dist > maxDist:
+			maxDist = dist
+			currAction = x # move in the matching direction
 	return currAction
 
 def crossbowRange(state, observations):
@@ -254,7 +194,7 @@ def projectileRange(state, observations):
 		return 2
 	if strength <= 5:
 		return 3
-	if strength <= 7: # TODO: If projectile is Aklys, return 4 (tether prevents it from going any farther)
+	if strength <= 7: # TODO: If projectile is an aklys, return 4 (tether prevents it from going any farther)
 		return 4
 	if strength <= 9:
 		return 5
