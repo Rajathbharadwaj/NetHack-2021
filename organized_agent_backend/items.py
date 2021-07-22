@@ -868,7 +868,219 @@ itemNames = [
 	"roshi corpse",
 	"guide corpse",
 	"warrior corpse",
-	"apprentice corpse"
+	"apprentice corpse",
+	# And now we get to artificial glyph IDs that aren't in the observation space.
+	# This is for identified potions and stuff, since they can be represented by several possible glyphs otherwise.
+	# Where possible, we'll omit the word "potion"/etc so we can match both "potion of booze" and "potions of booze" in one go
+	
+	# Cloaks
+	"of displacement", # 10000
+	"of invisibility", # 10001
+	"of magic resistance", # 10002
+	"of protection", # 10003
+	# Helms
+	"helmet", # 10004
+	"kabuto", # as above
+	"of brilliance", # 10005
+	"of opposite alignment", # 10006
+	"of telepathy" # 10007
+	# Gloves
+	"leather gloves", # 10008
+	"yugake", # as above
+	"gauntlets of dexterity", # 10009
+	"gauntlets of fumbling", # 10010
+	"gauntlets of power" # 10011
+	# Boots
+	"elven boots", # 10012
+	"kicking boots", # 10013
+	"fumble boots", # 10014
+	"levitation boots", # 10015
+	"jumping boots", # 10016
+	"speed boots", # 10017
+	"water walking boots", # 10018
+	# Rings
+	"of adornment", # 10019
+	"of hunger", # 10020
+	"ring of protection", # 10021
+	"rings of protection", # as above
+	"of protection from shape changers", # 10022
+	"of stealth", # 10023
+	"of sustain ability", # 10024
+	"of warning", # 10025
+	"of aggravate monster", # 10026
+	"of cold resistance", # 10027
+	"of gain constitution", # 10028
+	"of gain strength", # 10029
+	"of increase accuracy", # 10030
+	"of increase damage", # 10031
+	"of invisibility", # 10032
+	"of poison resistance", # 10033
+	"of see invisible", # 10034
+	"of shock resistance", # 10035
+	"of fire resistance", # 10036
+	"of free action", # 10037
+	"of levitation", # 10038
+	"of regeneration", # 10039
+	"of searching", # 10040
+	"of slow digestion", # 10041
+	"of teleportation", # 10042
+	"of conflict", # 10043
+	"of polymorph", # 10044
+	"of polymorph control", # 10045
+	"of teleport control", # 10046
+	# Amulets
+	"of change", # 10047
+	"of ESP", # 10048
+	"of life saving", # 10049
+	"of magical breathing", # 10050
+	"of reflection", # 10051
+	"of restful sleep", # 10052
+	"of strangulation", # 10053
+	"of unchanging", # 10054
+	"versus poison", # 10055
+	# Potions
+	"of booze", # 10056
+	"of fruit juice", # 10057
+	"potion of see invisible", # 10058
+	"potions of see invisible", # as above
+	"of sickness", # 10059
+	"of confusion", # 10060
+	"of extra healing", # 10061
+	"of hallucination", # 10062
+	"of healing", # 10063
+	"of restore ability", # 10064
+	"of sleeping", # 10065
+	"of blindness", # 10066
+	"of gain energy", # 10067
+	"potion of invisibility", # 10068
+	"potions of invisibility", # as above
+	"of monster detection", # 10069
+	"of object detection", # 10070
+	"of enlightenment", # 10071
+	"of full healing", # 10072
+	"potion of levitation", # 10073
+	"potions of levitation", # as above
+	"potion of polymorph", # 10074
+	"potions of polymorph", # as above
+	"of speed", # 10075
+	"of acid", # 10076
+	"of oil", # 10077
+	"of gain ability", # 10078
+	"of gain level", # 10079
+	"of paralysis", # 10080
+	# Scrolls
+	"of identify", # 10081
+	"of light", # 10082
+	"of enchant weapon", # 10083
+	"of enchant armor", # 10084
+	"of remove curse", # 10085
+	"of confuse monster", # 10086
+	"of destroy armor", # 10087
+	"of fire", # 10088
+	"of food detection", # 10089
+	"of gold detection", # 10090
+	"of magic mapping", # 10091
+	"of scare monster", # 10092
+	"scroll of teleportation", # 10093
+	"scrolls of teleportation", # 10094
+	"of amnesia", # 10095
+	"of create monster", # 10096
+	"of earth", # 10097
+	"of taming", # 10098
+	"of charging", # 10099
+	"of genocide", # 10100
+	"of punishment", # 10101
+	"of stinking cloud", # 10102
+	# Spellbooks
+	"of force bolt", # 10103
+	"of drain life", # 10104
+	"of magic missile", # 10105
+	"of cone of cold", # 10106
+	"of fireball", # 10107
+	"of finger of death", # 10108
+	"spellbook of protection", # 10109
+	"spellbooks of protection", # as above
+	"spellbook of create monster", # 10110
+	"spellbooks of create monster", # as above
+	"spellbook of remove curse", # 10111
+	"spellbooks of remove curse", # as above
+	"of create familiar", # 10112
+	"of turn undead", # 10113
+	"of detect monsters", # 10114
+	"spellbook of light", # 10115
+	"spellbooks of light", # as above
+	"of detect food", # 10116
+	"of clairvoyance", # 10117
+	"of detect unseen", # 10118
+	"spellbook of identify", # 10119
+	"spellbooks of identify", # as above
+	"of detect treasure", # 10120
+	"spellbook of magic mapping", # 10121
+	"spellbooks of magic mapping", # as above
+	"spellbook of sleep", # 10122
+	"spellbooks of sleep", # as above
+	"spellbook of confuse monster", # 10123
+	"spellbooks of confuse monster", # as above
+	"of slow monster", # 10124
+	"of cause fear", # 10125
+	"of charm monster", # 10126
+	"of jumping", # 10127
+	"of haste self", # 10128
+	"spellbook of invisibility", # 10129
+	"spellbooks of invisibility", # as above
+	"spellbook of levitation", # 10130
+	"spellbooks of levitation", # as above
+	"of teleport away", # 10131
+	"spellbook of healing", # 10132
+	"spellbooks of healing", # as above
+	"of cure blindness", # 10133
+	"of cure sickness", # 10134
+	"spellbook of extra healing", # 10135
+	"spellbooks of extra healing", # as above
+	"of stone to flesh", # 10136
+	"spellbook of restore ability", # 10137
+	"spellbooks of restore ability", # as above
+	"of knock", # 10138
+	"of wizard lock", # 10139
+	"of dig", # 10140
+	"spellbook of polymorph", # 10141
+	"spellbooks of polymorph", # as above
+	"of cancellation", # 10142
+	# Wands
+	"wand of light", # 10143
+	"wands of light", # as above
+	"of nothing", # 10144
+	"of digging", # 10145
+	"wand of enlightenment", # 10146
+	"wands of enlightenment", # as above
+	"of locking", # 10147
+	"wand of magic missile", # 10148
+	"wands of magic missile", # as above
+	"of make invisible", # 10149
+	"of opening", # 10150
+	"of probing", # 10151
+	"of secret door detection", # 10152
+	"wand of slow monster", # 10153
+	"wands of slow monster", # as above
+	"of speed monster", # 10154
+	"of striking", # 10155
+	"of undead turning", # 10156
+	"of cold", # 10157
+	"wand of fire", # 10158
+	"wands of fire", # as above
+	"of lightning", # 10159
+	"wand of sleep", # 10160
+	"wands of sleep", # as above
+	"wand of cancellation", # 10161
+	"wands of cancellation", # as above
+	"wand of create monster", # 10162
+	"wands of create monster", # as above
+	"wand of polymorph", # 10163
+	"wands of polymorph", # as above
+	"wand of teleportation", # 10164
+	"wands of teleportation", # as above
+	"of death", # 10165
+	"of wishing" # 10166
 ]
 
 itemLookup = [
@@ -1706,5 +1918,216 @@ itemLookup = [
 	1521,
 	1522,
 	1523,
-	1524
+	1524,
+	
+	# Artificial glyph IDs
+	
+	# Cloaks
+	10000,
+	10001,
+	10002,
+	10003,
+	# Helms
+	10004,
+	10004, # samurai alt name
+	10005,
+	10006,
+	10007,
+	# Gloves
+	10008,
+	10009, # samurai alt name
+	10010,
+	10011,
+	10012,
+	# Boots
+	10013,
+	10014,
+	10015,
+	10016,
+	10017,
+	10018,
+	10019,
+	# Rings
+	10020,
+	10021,
+	10022,
+	10022, # plural
+	10023,
+	10024,
+	10025,
+	10026,
+	10027,
+	10028,
+	10029,
+	10030,
+	10031,
+	10032,
+	10033,
+	10034,
+	10035,
+	10036,
+	10037,
+	10038,
+	10039,
+	10040,
+	10041,
+	10042,
+	10043,
+	10044,
+	10045,
+	10046,
+	10047,
+	# Amulets
+	10048,
+	10049,
+	10050,
+	10051,
+	10052,
+	10053,
+	10054,
+	10055,
+	10056,
+	# Potions
+	10057,
+	10058,
+	10059,
+	10059, # plural
+	10060,
+	10061,
+	10062,
+	10063,
+	10064,
+	10065,
+	10066,
+	10067,
+	10068,
+	10069,
+	10069, # plural
+	10070,
+	10071,
+	10072,
+	10073,
+	10074,
+	10074, # plural
+	10075,
+	10075, # plural
+	10076,
+	10077,
+	10078,
+	10079,
+	10080,
+	10081,
+	# Scrolls
+	10082,
+	10083,
+	10084,
+	10085,
+	10086,
+	10087,
+	10088,
+	10089,
+	10090,
+	10091,
+	10092,
+	10093,
+	10094,
+	10094, # plural
+	10095,
+	10096,
+	10097,
+	10098,
+	10099,
+	10100,
+	10101,
+	10102,
+	# Spellbooks
+	10103,
+	10104,
+	10105,
+	10106,
+	10107,
+	10108,
+	10109,
+	10109, # plural
+	10110,
+	10110, # plural
+	10111,
+	10111, # plural
+	10112,
+	10113,
+	10114,
+	10115, 
+	10115, # plural
+	10116,
+	10117,
+	10118,
+	10119, 
+	10119, # plural
+	10120,
+	10121, 
+	10121, # plural
+	10122, 
+	10122, # plural
+	10123, 
+	10123, # plural
+	10124,
+	10125,
+	10126,
+	10127,
+	10128,
+	10129,
+	10129, # plural
+	10130,
+	10130, # plural
+	10131,
+	10132,
+	10132, # plural
+	10133,
+	10134,
+	10135,
+	10135, # plural
+	10136,
+	10137,
+	10137, # plural
+	10138,
+	10139,
+	10140,
+	10141,
+	10141, # plural
+	10142,
+	# Wands
+	10143,
+	10143, # plural
+	10144,
+	10145,
+	10146,
+	10146, # plural
+	10147,
+	10148,
+	10148, # plural
+	10149,
+	10150,
+	10151,
+	10152,
+	10153,
+	10153, # plural
+	10154,
+	10155,
+	10156,
+	10157,
+	10158,
+	10158, # plural
+	10159,
+	10160,
+	10160, # plural
+	10161,
+	10161, # plural
+	10162,
+	10162, # plural
+	10163,
+	10163, # plural
+	10164,
+	10164, # plural
+	10165,
+	10166
 ]

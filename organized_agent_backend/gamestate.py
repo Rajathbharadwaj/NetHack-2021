@@ -31,6 +31,8 @@ class Gamestate(object):
             "hunger_threshold" : 0, # Tracks hunger severity, we want to print exactly once when we reach Weak status
             "weight_threshold" : 0 # Tracks encumbrance severity, we want to print exactly once when we reach Burdened status
         }
+        self.lastMessage = ""
+        self.messageStreak = 0 # Used to track if we're stuck against a wall or something
     
     def reset(self):
         # Before we wipe the slate clean, we should dump core if we haven't already
@@ -60,6 +62,8 @@ class Gamestate(object):
             "hunger_threshold" : 0,
             "weight_threshold" : 0
         }
+        self.lastMessage = ""
+        self.messageStreak = 0
     
     def popFromQueue(self):
         if len(self.queue) == 0:

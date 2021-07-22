@@ -28,6 +28,7 @@ def narrateGame(state, observations):
 	if hpRatio <= 0.25 and state.narrationStatus["hp_threshold"] <= 1:
 		state.narrationStatus["hp_threshold"] = 2 # Alarm tripped, don't trip again until HP is restored
 		print("Agent's HP is critically low!")
+		print("Situation: \"" + readMessage(observations) + "\"")
 	if hpRatio <= 0.5 and state.narrationStatus["hp_threshold"] == 0:
 		state.narrationStatus["hp_threshold"] = 1 # Alarm semi-tripped, alarm can still be tripped if HP drops further
 		print("Agent's HP has dropped to half.")

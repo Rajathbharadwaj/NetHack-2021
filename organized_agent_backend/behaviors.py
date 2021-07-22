@@ -9,6 +9,7 @@ from .ranged_combat import fightAtRange
 from .narration import narrateGame, CONST_QUIET
 
 CONST_TREAT_UNKNOWN_AS_PASSABLE = True # I've never yet set this to false but I'm keeping the option right now – you never know
+CONST_MESSAGE_STREAK_THRESHOLD = 200 # Panic if at least this many of the same message appear in a row
 
 CONST_AGENDA = [] # Array is populated at the end of this file
 
@@ -18,6 +19,7 @@ def chooseAction(state, observations):
     state.updateMap(observations)
     handleItemUnderfoot(state, observations)
     narrateGame(state, observations)
+    
     action = state.popFromQueue()
     if action != -1:
         return action
@@ -107,8 +109,27 @@ def routineCheckup(state, observations):
         return 61
     return -1
 
+def evaluateMessageStreak(state, observations):
+    if readMessage(observations) == "":
+        state.lastMessage = ""
+        state.messageStreak = 0
+        return -1
+    if readMessage(observations) == state.lastMessage:
+        state.messageStreak += 1
+    else:
+        state.lastMessage = readMessage(observations)
+        state.messageStreak = 0
+    if state.messageStreak >= CONST_MESSAGE_STREAK_THRESHOLD:
+        state.narrationStatus["quit_game"] = True
+        state.coreDump("Agent has panicked! (Stuck in situation: \"" + readMessage(observations) + "\")",observations)
+        state.queue = [7]
+        return 65 # Quit, then next step, answer yes to "are you sure?"
+    return -1
+        
+
 
 CONST_AGENDA = [advancePrompts,
+    evaluateMessageStreak,
     considerDescendingStairs,
     checkForEmergencies,
     fightInMelee,

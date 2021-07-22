@@ -4,7 +4,10 @@ from .utilities import *
 
 def searchAndProceed(state, observations):
 	# TODO: Look for an item nearby and if there is one prioritize it
-	return pathfind(state, observations)[0]
+	action, target = pathfind(state, observations)
+	if target == ">" or target == "?":
+		state.resetDesperation()
+	return action
 
 def pathfind(state, observations, target="$>?", permeability=isPassable, searchRange=-1):
 	# Uses Dijkstra's algorithm to get to the nearest space that's marked as one of the items in target
