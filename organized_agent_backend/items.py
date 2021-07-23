@@ -4,7 +4,7 @@
 
 # "Lockpicks" = items which can help you get past locked doors
 
-lockpicks = [2103, 2104]
+lockpicks = [2102, 2103, 2104]
 
 # "Blinds" = items that can induce controllable blindness (to kill Floating Eyes and stuff)
 

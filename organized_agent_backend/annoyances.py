@@ -50,10 +50,6 @@ def butcherFloatingEyes(state, observations):
 			return 63 # put on
 	if direction == -1:
 		return -1 # No floating eye in range.
-	
-	# Floating eye target locked.
-	# state.queue = [bestBlind, 40, direction, 40, direction, 69, bestBlind, 36] # "Put on what?": bestBlind, fight the eye twice, remove the blindfold
-	# return 63 # put on
 
 def pickLocks(state, observations):
 	handyLockpicks, types, indices = searchInventory(observations, lockpicks)
@@ -71,8 +67,10 @@ def pickLocks(state, observations):
 		row, col, str = dirs[x]
 		if state.readMap(row,col) == "+":
 			if not CONST_QUIET:
-				print("Unlocking door with lock-pick.")
+				print("Unlocking door with lock-pick in direction ",end="")
 			state.lastDirection = str
+			if not CONST_QUIET:
+				print(str)
 			state.queue = [bestLockpick, x] # "Apply what?": bestLockpick, "In what direction?": direction
 			return 24 # apply
 	return -1 # No locked door in range.

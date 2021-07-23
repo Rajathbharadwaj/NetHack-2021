@@ -130,7 +130,7 @@ class Gamestate(object):
                 self.dmap[dlvl][row+1][col] = "+"
             if self.lastDirection == "W" and col > 0: # west
                 self.dmap[dlvl][row][col-1] = "+"
-        if message.find("You succeed in picking the lock.") != -1:
+        if message.find("You succeed in picking the lock.") != -1 or message.find("You succeed in unlocking the door.") != -1:
             # Figure out which door it was referring to
             # If the hero is stunned or confused, we might mark the wrong square, but it'll be corrected on the next update
             # TODO "RODNEY": Enable diagonals

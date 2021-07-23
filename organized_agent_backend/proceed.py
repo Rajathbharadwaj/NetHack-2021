@@ -3,7 +3,9 @@
 from .utilities import *
 
 def searchAndProceed(state, observations):
-	# TODO: Look for an item nearby and if there is one prioritize it
+	action, trashcan = pathfind(state, observations, target="$", searchRange=8)
+	if action != -1:
+		return action
 	action, target = pathfind(state, observations)
 	if target == ">" or target == "?":
 		state.resetDesperation()
