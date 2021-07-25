@@ -24,11 +24,18 @@ def evaluateObstacles(state, observations):
 		row, col, str = dirs[x]
 		if state.readMap(row,col) == "+":
 			if not CONST_QUIET:
-				print("Well, I guess it's come to this. *KICKS DOWN DOOR*")
+				print("*KICKS DOWN DOOR*")
 			state.queue = [x] # appropriate direction
 			return 48 # kick
 	
-	action = pathfind(state, observations, target="+")
+	# OK, at this point, we're desperate enough that we're willing to kick down doors and step on traps.
+	
+	willingToPass = isPassable.copy()
+	willingToPass["+"] = True
+	willingToPass["^"] = True
+	action = pathfind(state, observations, target=">?", permeability=willingToPass)[0]
+	if action != -1:
+		return action
 	
 	action = gropeForDoors(state, observations, state.desperation)
 	while action == -1 and state.desperation < 30:

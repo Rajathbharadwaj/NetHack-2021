@@ -37,6 +37,12 @@ def chooseAction(state, observations):
             print("Protocol at fault: ",end="")
             print(protocol)
             exit(1)
+        if type(action) == tuple:
+            # This is a fatal error, so we print even if CONST_QUIET
+            print("Fatal error: Protocol returned a tuple.")
+            print("Protocol at fault: ",end="")
+            print(protocol)
+            exit(1)
         if action >= 0 and action < 8 and protocol != advancePrompts:
             state.lastDirection = numericCompass[action]
         if action != -1:

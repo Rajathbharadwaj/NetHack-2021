@@ -1,12 +1,19 @@
 #!/usr/bin/python
 
 from .utilities import *
+from .inventory import *
 
 def searchAndProceed(state, observations):
-	action, trashcan = pathfind(state, observations, target="$", searchRange=8)
+	willingToPass = isPassable.copy()
+	# If we have a lockpick, we can get past locked doors
+	if len(searchInventory(observations, lockpicks)[0]) > 0:
+		willingToPass["+"] = True
+	
+	action, trashcan = pathfind(state, observations, target="$", permeability=willingToPass, searchRange=8)
 	if action != -1:
 		return action
-	action, target = pathfind(state, observations)
+	
+	action, target = pathfind(state, observations, permeability=willingToPass)
 	if target == ">" or target == "?":
 		state.resetDesperation()
 	return action
