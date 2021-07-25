@@ -17,7 +17,10 @@ permafood = [1299, 2148, 2149, 2150, 2151, 2158, 2159, 2160, 2161, 2162, 2163, 2
 # TODO: Implement aklys use. (It has a tether which limits it to a range of 4 tiles.)
 basicProjectiles = [1913, 1916, 1917, 1918, 1919, 1920, 1921, 1922, 1923, 1924, 1925, 1926, 1929, 1930, 1931, 1932, 1968]
 
-worthTaking = lockpicks + blinds + permafood + basicProjectiles
+# "Heals" = items that can restore HP via their application
+heals = [10063]
+
+worthTaking = lockpicks + blinds + permafood + basicProjectiles + heals
 
 # These are two parallel arrays indexing the glyph IDs of every item, and giving their visible name.
 # This way, the agent can look in this table to figure out what's what, when it sees "you see here a <thing>"
@@ -28,9 +31,6 @@ worthTaking = lockpicks + blinds + permafood + basicProjectiles
 # I
 # am not entirely looking forward to that. It's an awful big ask for just one person.
 # But for now, here are the arrays.
-
-# TODO: We're going to want to sneak some glyph IDs in here that don't appear in the raw observations.
-	# These glyph IDs will correspond to identified scrolls/potions/wands/etc
 
 itemNames = [
 	"pear", # a bunch of stuff has "pear" in its name so this is going straight to the front to avoid confusion
@@ -883,13 +883,13 @@ itemNames = [
 	"kabuto", # as above
 	"of brilliance", # 10005
 	"of opposite alignment", # 10006
-	"of telepathy" # 10007
+	"of telepathy", # 10007
 	# Gloves
 	"leather gloves", # 10008
 	"yugake", # as above
 	"gauntlets of dexterity", # 10009
 	"gauntlets of fumbling", # 10010
-	"gauntlets of power" # 10011
+	"gauntlets of power", # 10011
 	# Boots
 	"elven boots", # 10012
 	"kicking boots", # 10013
@@ -982,105 +982,107 @@ itemNames = [
 	"of magic mapping", # 10091
 	"of scare monster", # 10092
 	"scroll of teleportation", # 10093
-	"scrolls of teleportation", # 10094
-	"of amnesia", # 10095
-	"of create monster", # 10096
-	"of earth", # 10097
-	"of taming", # 10098
-	"of charging", # 10099
-	"of genocide", # 10100
-	"of punishment", # 10101
-	"of stinking cloud", # 10102
+	"scrolls of teleportation", # as above
+	"of amnesia", # 10094
+	"of create monster", # 10095
+	"of earth", # 10096
+	"of taming", # 10097
+	# yea I know I skipped 10098 and 10099 shhhhh
+	"of charging", # 10100
+	"of genocide", # 10101
+	"of punishment", # 10102
+	"of stinking cloud", # 10103
 	# Spellbooks
-	"of force bolt", # 10103
-	"of drain life", # 10104
-	"of magic missile", # 10105
-	"of cone of cold", # 10106
-	"of fireball", # 10107
-	"of finger of death", # 10108
-	"spellbook of protection", # 10109
+	"of force bolt", # 10104
+	"of drain life", # 10105
+	"of magic missile", # 10106
+	"of cone of cold", # 10107
+	"of fireball", # 10108
+	"of finger of death", # 10109
+	"spellbook of protection", # 10110
 	"spellbooks of protection", # as above
-	"spellbook of create monster", # 10110
+	"spellbook of create monster", # 10111
 	"spellbooks of create monster", # as above
-	"spellbook of remove curse", # 10111
+	"spellbook of remove curse", # 10112
 	"spellbooks of remove curse", # as above
-	"of create familiar", # 10112
-	"of turn undead", # 10113
-	"of detect monsters", # 10114
-	"spellbook of light", # 10115
+	"of create familiar", # 10113
+	"of turn undead", # 10114
+	"of detect monsters", # 10115
+	"spellbook of light", # 10116
 	"spellbooks of light", # as above
-	"of detect food", # 10116
-	"of clairvoyance", # 10117
-	"of detect unseen", # 10118
-	"spellbook of identify", # 10119
+	"of detect food", # 10117
+	"of clairvoyance", # 10118
+	"of detect unseen", # 10119
+	"spellbook of identify", # 10120
 	"spellbooks of identify", # as above
-	"of detect treasure", # 10120
-	"spellbook of magic mapping", # 10121
+	"of detect treasure", # 10121
+	"spellbook of magic mapping", # 10122
 	"spellbooks of magic mapping", # as above
-	"spellbook of sleep", # 10122
+	"spellbook of sleep", # 10123
 	"spellbooks of sleep", # as above
-	"spellbook of confuse monster", # 10123
+	"spellbook of confuse monster", # 10124
 	"spellbooks of confuse monster", # as above
-	"of slow monster", # 10124
-	"of cause fear", # 10125
-	"of charm monster", # 10126
-	"of jumping", # 10127
-	"of haste self", # 10128
-	"spellbook of invisibility", # 10129
+	"of slow monster", # 10125
+	"of cause fear", # 10126
+	"of charm monster", # 10127
+	"of jumping", # 10128
+	"of haste self", # 10129
+	"spellbook of invisibility", # 10130
 	"spellbooks of invisibility", # as above
-	"spellbook of levitation", # 10130
+	"spellbook of levitation", # 10131
 	"spellbooks of levitation", # as above
-	"of teleport away", # 10131
-	"spellbook of healing", # 10132
+	"of teleport away", # 10132
+	"spellbook of healing", # 10133
 	"spellbooks of healing", # as above
-	"of cure blindness", # 10133
-	"of cure sickness", # 10134
-	"spellbook of extra healing", # 10135
+	"of cure blindness", # 10134
+	"of cure sickness", # 10135
+	"spellbook of extra healing", # 10136
 	"spellbooks of extra healing", # as above
-	"of stone to flesh", # 10136
-	"spellbook of restore ability", # 10137
+	"of stone to flesh", # 10137
+	"spellbook of restore ability", # 10138
 	"spellbooks of restore ability", # as above
-	"of knock", # 10138
-	"of wizard lock", # 10139
-	"of dig", # 10140
-	"spellbook of polymorph", # 10141
+	"of knock", # 10139
+	"of wizard lock", # 10140
+	"of dig", # 10141
+	"spellbook of polymorph", # 10142
 	"spellbooks of polymorph", # as above
-	"of cancellation", # 10142
+	"of cancellation", # 10143
 	# Wands
-	"wand of light", # 10143
+	"wand of light", # 10144
 	"wands of light", # as above
-	"of nothing", # 10144
-	"of digging", # 10145
-	"wand of enlightenment", # 10146
+	"of nothing", # 10145
+	"of digging", # 10146
+	"wand of enlightenment", # 10147
 	"wands of enlightenment", # as above
-	"of locking", # 10147
-	"wand of magic missile", # 10148
+	"of locking", # 10148
+	"wand of magic missile", # 10149
 	"wands of magic missile", # as above
-	"of make invisible", # 10149
-	"of opening", # 10150
-	"of probing", # 10151
-	"of secret door detection", # 10152
-	"wand of slow monster", # 10153
+	"of make invisible", # 10150
+	"of opening", # 10151
+	"of probing", # 10152
+	"of secret door detection", # 10153
+	"wand of slow monster", # 10154
 	"wands of slow monster", # as above
-	"of speed monster", # 10154
-	"of striking", # 10155
-	"of undead turning", # 10156
-	"of cold", # 10157
-	"wand of fire", # 10158
+	"of speed monster", # 10155
+	"of striking", # 10156
+	"of undead turning", # 10157
+	"wand of cold", # 10158
+	"wands of cold", # as above
+	"wand of fire", # 10159
 	"wands of fire", # as above
-	"of lightning", # 10159
-	"wand of sleep", # 10160
+	"of lightning", # 10160
+	"wand of sleep", # 10161
 	"wands of sleep", # as above
-	"wand of cancellation", # 10161
+	"wand of cancellation", # 10162
 	"wands of cancellation", # as above
-	"wand of create monster", # 10162
+	"wand of create monster", # 10163
 	"wands of create monster", # as above
-	"wand of polymorph", # 10163
+	"wand of polymorph", # 10164
 	"wands of polymorph", # as above
-	"wand of teleportation", # 10164
+	"wand of teleportation", # 10165
 	"wands of teleportation", # as above
-	"of death", # 10165
-	"of wishing" # 10166
+	"of death", # 10166
+	"of wishing" # 10167
 ]
 
 itemLookup = [
@@ -1935,23 +1937,24 @@ itemLookup = [
 	10007,
 	# Gloves
 	10008,
-	10009, # samurai alt name
+	10008, # samurai alt name
+	10009,
 	10010,
 	10011,
-	10012,
 	# Boots
+	10012,
 	10013,
 	10014,
 	10015,
 	10016,
 	10017,
 	10018,
-	10019,
 	# Rings
+	10019,
 	10020,
 	10021,
+	10021, # plural
 	10022,
-	10022, # plural
 	10023,
 	10024,
 	10025,
@@ -1976,8 +1979,8 @@ itemLookup = [
 	10044,
 	10045,
 	10046,
-	10047,
 	# Amulets
+	10047,
 	10048,
 	10049,
 	10050,
@@ -1986,12 +1989,12 @@ itemLookup = [
 	10053,
 	10054,
 	10055,
-	10056,
 	# Potions
+	10056,
 	10057,
 	10058,
+	10058, # plural
 	10059,
-	10059, # plural
 	10060,
 	10061,
 	10062,
@@ -2001,23 +2004,23 @@ itemLookup = [
 	10066,
 	10067,
 	10068,
+	10068, # plural
 	10069,
-	10069, # plural
 	10070,
 	10071,
 	10072,
 	10073,
-	10074,
+	10073, # plural
+	10074, 
 	10074, # plural
-	10075,
-	10075, # plural
+	10075, 
 	10076,
 	10077,
 	10078,
 	10079,
 	10080,
-	10081,
 	# Scrolls
+	10081,
 	10082,
 	10083,
 	10084,
@@ -2030,96 +2033,94 @@ itemLookup = [
 	10091,
 	10092,
 	10093,
+	10093, # plural
 	10094,
-	10094, # plural
 	10095,
 	10096,
 	10097,
-	10098,
-	10099,
 	10100,
 	10101,
 	10102,
-	# Spellbooks
 	10103,
+	# Spellbooks
 	10104,
 	10105,
 	10106,
 	10107,
 	10108,
 	10109,
-	10109, # plural
-	10110,
+	10110, 
 	10110, # plural
 	10111,
 	10111, # plural
 	10112,
+	10112, # plural
 	10113,
 	10114,
 	10115, 
-	10115, # plural
 	10116,
+	10116, # plural
 	10117,
 	10118,
 	10119, 
-	10119, # plural
 	10120,
+	10120, # plural
 	10121, 
-	10121, # plural
 	10122, 
 	10122, # plural
 	10123, 
 	10123, # plural
-	10124,
+	10124, 
+	10124, # plural
 	10125,
 	10126,
 	10127,
 	10128,
 	10129,
-	10129, # plural
-	10130,
+	10130, 
 	10130, # plural
-	10131,
+	10131, 
+	10131, # plural
 	10132,
-	10132, # plural
-	10133,
+	10133, 
+	10133, # plural
 	10134,
 	10135,
-	10135, # plural
-	10136,
+	10136, 
+	10136, # plural
 	10137,
-	10137, # plural
-	10138,
+	10138, 
+	10138, # plural
 	10139,
 	10140,
 	10141,
-	10141, # plural
-	10142,
-	# Wands
+	10142, 
+	10142, # plural
 	10143,
-	10143, # plural
+	# Wands
 	10144,
+	10144, # plural
 	10145,
 	10146,
-	10146, # plural
 	10147,
+	10147, # plural
 	10148,
-	10148, # plural
 	10149,
+	10149, # plural
 	10150,
 	10151,
 	10152,
 	10153,
-	10153, # plural
 	10154,
+	10154, # plural
 	10155,
 	10156,
 	10157,
 	10158,
 	10158, # plural
 	10159,
+	10159, # plural
 	10160,
-	10160, # plural
 	10161,
 	10161, # plural
 	10162,
@@ -2129,5 +2130,7 @@ itemLookup = [
 	10164,
 	10164, # plural
 	10165,
-	10166
+	10165, # plural
+	10166,
+	10167
 ]

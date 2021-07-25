@@ -5,6 +5,7 @@
 
 from .items import *
 from .gamestate import *
+from .logicgrid import identifiables
 
 # TODO: Add a function that tells you what weapon is wielded
 
@@ -17,6 +18,22 @@ def searchInventory(observations, desired):
 	for x in range(len(observations["inv_glyphs"])):
 		for y in desired:
 			if observations["inv_glyphs"][x] == y:
+				letters.append(observations["inv_letters"][x])
+				types.append(y)
+				indices.append(x)
+	return letters, types, indices
+
+def searchInventoryArtificial(state, observations, desired):
+	# Use this version to search for artificial glyph numbers
+	letters = []
+	types = []
+	indices = []
+	for x in range(len(observations["inv_glyphs"])):
+		if not (observations["inv_glyphs"][x] in identifiables):
+			continue
+		oclass = readInventoryItemClass(observations, x)
+		for y in desired:
+			if state.checkIfIs(observations["inv_glyphs"][x], y, oclass):
 				letters.append(observations["inv_letters"][x])
 				types.append(y)
 				indices.append(x)

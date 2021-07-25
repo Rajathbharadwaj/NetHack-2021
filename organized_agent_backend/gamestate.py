@@ -3,6 +3,7 @@ import numpy as np
 from .utilities import *
 from .annoyances import * # for the purpose of tracking troubles
 from .narration import CONST_QUIET, CONST_STATUS_UPDATE_PERIOD, CONST_PRINT_MAP_DURING_FLOOR_TRANSITION
+from .logicgrid import *
 
 CONST_DEAD_END_MULT = 3 # Multiply the number of times dead end squares get searched by this value
 CONST_DESPERATION_RATE = 3 # Amount by which to increment desperation
@@ -33,6 +34,14 @@ class Gamestate(object):
         }
         self.lastMessage = ""
         self.messageStreak = 0 # Used to track if we're stuck against a wall or something
+        self.identifications = {
+            4 : LogicGrid(ringAppearances, ringActuals),
+            5 : LogicGrid(amuletAppearances, amuletActuals),
+            8 : LogicGrid(potionAppearances, potionActuals),
+            9 : LogicGrid(scrollAppearances, scrollActuals),
+            10 : LogicGrid(spellbookAppearances, spellbookActuals),
+            11 : LogicGrid(wandAppearances, wandActuals)
+        }
     
     def reset(self):
         # Before we wipe the slate clean, we should dump core if we haven't already
@@ -64,6 +73,14 @@ class Gamestate(object):
         }
         self.lastMessage = ""
         self.messageStreak = 0
+        self.identifications = {
+            4 : LogicGrid(ringAppearances, ringActuals),
+            5 : LogicGrid(amuletAppearances, amuletActuals),
+            8 : LogicGrid(potionAppearances, potionActuals),
+            9 : LogicGrid(scrollAppearances, scrollActuals),
+            10 : LogicGrid(spellbookAppearances, spellbookActuals),
+            11 : LogicGrid(wandAppearances, wandActuals)
+        }
     
     def popFromQueue(self):
         if len(self.queue) == 0:
@@ -243,6 +260,16 @@ class Gamestate(object):
                 print(self.dmap[dlvl][x][y],end="")
             print("") # end line of printout
         print("")
+    def eliminate(self, appearance, actual, item_class):
+        self.identifications[item_class].eliminate(appearance, actual)
+    def confirm(self, appearance, actual, item_class):
+        self.identifications[item_class].confirm(appearance, actual)
+    def markScrollExists(self, appearance):
+        for x in range(20):
+            # Rule out all the "dummy" possibilities for this scroll type
+            self.identifications[9].eliminate(appearance, 20000+x)
+    def checkIfIs(self, appearance, actual, item_class):
+        return self.identifications[item_class].isConfirmedAs(appearance, actual)
     
 def makeEmptyMap(depth,default):
     # Returns a 3D array, dimensioned to correspond to the dungeon's squares
@@ -319,3 +346,4 @@ def updateMainMapSquare(previousMarking, observedGlyph, observedChar, heroXDist,
     if observedGlyph <= 380:
         return "&" # Monster whose type we don't have special procedures for. Roll for initiative or something
     return "." # Anything else we treat as open space
+    

@@ -10,7 +10,7 @@ from .items import *
 from .gamestate import *
 from .utilities import *
 
-CONST_QUIET = False # Enable to silence all prints about gamestate
+CONST_QUIET = False # Enable to silence all prints about gamestate except fatal errors
 CONST_STATUS_UPDATE_PERIOD = 2000 # Print the map out every <#> steps
 CONST_PRINT_MAP_DURING_FLOOR_TRANSITION = False # I mean... this prints the map during floor transition. What else can I say?
 

@@ -7,9 +7,11 @@ from .proceed import searchAndProceed, pathfind
 from .obstacles import evaluateObstacles
 from .ranged_combat import fightAtRange
 from .narration import narrateGame, CONST_QUIET
+from .logicgrid import *
 
 CONST_TREAT_UNKNOWN_AS_PASSABLE = True # I've never yet set this to false but I'm keeping the option right now – you never know
 CONST_MESSAGE_STREAK_THRESHOLD = 200 # Panic if at least this many of the same message appear in a row
+CONST_INVENTORY_REVIEW_FREQUENCY = 50 # Check inventory for formal identification every # steps
 
 CONST_AGENDA = [] # Array is populated at the end of this file
 
@@ -19,6 +21,7 @@ def chooseAction(state, observations):
     state.updateMap(observations)
     handleItemUnderfoot(state, observations)
     narrateGame(state, observations)
+    passiveItemIdentification(state, observations)
     
     action = state.popFromQueue()
     if action != -1:
@@ -29,10 +32,11 @@ def chooseAction(state, observations):
     for protocol in CONST_AGENDA:
         action = protocol(state,observations)
         if action == None:
+            # This is a fatal error, so we print even if CONST_QUIET
             print("Fatal error: Protocol didn't return anything.")
             print("Protocol at fault: ",end="")
             print(protocol)
-            exit()
+            exit(1)
         if action >= 0 and action < 8 and protocol != advancePrompts:
             state.lastDirection = numericCompass[action]
         if action != -1:
@@ -78,7 +82,14 @@ def considerDescendingStairs(state, observations):
     return -1
 
 def checkForEmergencies(state, observations):
-    # TODO
+    if observations["blstats"][10] * 4 < observations["blstats"][11]:
+        # Hero is at critical HP! Do we have a healing potion?
+        salvation, healTypes, indices = searchInventoryArtificial(state, observations, heals)
+        for x in range(len(salvation)):
+            if not CONST_QUIET:
+                print("Drinking that wonderful liquid of salvation!")
+            state.queue = [keyLookup[chr(salvation[x])]]
+            return 64 # quaff
     return -1
 
 def fightInMelee(state, observations):
@@ -99,14 +110,14 @@ def routineCheckup(state, observations):
         comestibles, foodTypes, indices = searchInventory(observations, permafood)
         for x in range(len(comestibles)):
             state.queue = [keyLookup[chr(comestibles[x])]]
-            return 35
+            return 35 # eat
         
     if state.itemUnderfoot != "":
         # There's something here worth picking up, so let's do that
         if not CONST_QUIET:
             print("Picked up: "+state.itemUnderfoot)
         state.itemUnderfoot = ""
-        return 61
+        return 61 # pick up
     return -1
 
 def evaluateMessageStreak(state, observations):
@@ -125,7 +136,19 @@ def evaluateMessageStreak(state, observations):
         state.queue = [7]
         return 65 # Quit, then next step, answer yes to "are you sure?"
     return -1
-        
+
+def passiveItemIdentification(state, observations):
+    # Every 50 steps, check our inventory to see if anything got formally identified
+    if state.stepsTaken % 50 != 1:
+        return
+    trashcan, types, indices = searchInventory(observations, identifiables)
+    for x in range(len(indices)):
+        desc = readInventoryItemDesc(observations, indices[x])
+        oclass = readInventoryItemClass(observations, indices[x])
+        descGlyph = identifyLoot(desc)[0]
+        if descGlyph < 10000:
+            continue
+        state.identifications[oclass].confirm(types[x],descGlyph)
 
 
 CONST_AGENDA = [advancePrompts,

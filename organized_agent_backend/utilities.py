@@ -130,6 +130,12 @@ def readSquare(observations, row, col):
     char = observations["chars"][row][col]
     return glyph, char
 
+def readInventoryItemDesc(observations, index):
+    return bytes(observations["inv_strs"][index]).decode('ascii').replace('\0','')
+
+def readInventoryItemClass(observations, index):
+    return observations["inv_oclasses"][index]
+
 def iterableOverVicinity(observations = [], returnDirections = False, x = -1, y = -1):
     # There are several situations where we want to check the eight squares surrounding us for some purpose or other.
     # This is
