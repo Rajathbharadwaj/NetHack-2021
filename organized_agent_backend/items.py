@@ -18,7 +18,10 @@ permafood = [1299, 2148, 2149, 2150, 2151, 2158, 2159, 2160, 2161, 2162, 2163, 2
 basicProjectiles = [1913, 1916, 1917, 1918, 1919, 1920, 1921, 1922, 1923, 1924, 1925, 1926, 1929, 1930, 1931, 1932, 1968]
 
 # "Heals" = items that can restore HP via their application
-heals = [10063]
+heals = [10061, 10063, 10072]
+
+# "Teleports" = items which cause teleportation when used
+teleports = [10093, 10165]
 
 worthTaking = lockpicks + blinds + permafood + basicProjectiles + heals
 
@@ -976,7 +979,8 @@ itemNames = [
 	"of remove curse", # 10085
 	"of confuse monster", # 10086
 	"of destroy armor", # 10087
-	"of fire", # 10088
+	"scroll of fire", # 10088
+	"scrolls of fire", # as above
 	"of food detection", # 10089
 	"of gold detection", # 10090
 	"of magic mapping", # 10091
@@ -2028,6 +2032,7 @@ itemLookup = [
 	10086,
 	10087,
 	10088,
+	10088, # plural
 	10089,
 	10090,
 	10091,

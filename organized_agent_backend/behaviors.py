@@ -26,7 +26,7 @@ def chooseAction(state, observations):
     action = state.popFromQueue()
     if action != -1:
         return action
-    #if(len(searchInventory(observations, blinds)[0]) == 0): # Uncomment this to startscum for a specific item
+    #if(len(searchInventoryArtificial(state, observations, teleports)[0]) == 0): # Uncomment this to startscum for a specific item
     #    state.queue = [7]
     #    return 65
     for protocol in CONST_AGENDA:

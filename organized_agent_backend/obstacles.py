@@ -4,6 +4,7 @@ from .utilities import *
 from .gamestate import CONST_DESPERATION_RATE
 from .proceed import pathfind
 from .narration import CONST_QUIET
+from .inventory import *
 
 def evaluateObstacles(state, observations):
 	if(state.desperation < CONST_DESPERATION_RATE):
@@ -12,6 +13,8 @@ def evaluateObstacles(state, observations):
 	while action == -1 and state.desperation < 10:
 		state.incrementDesperation()
 		action = gropeForDoors(state, observations, state.desperation)
+	if action != -1:
+		return action
 	heroRow = readHeroRow(observations)
 	heroCol = readHeroCol(observations)
 	dirs = iterableOverVicinity(observations,True)
@@ -31,7 +34,23 @@ def evaluateObstacles(state, observations):
 	while action == -1 and state.desperation < 30:
 		state.incrementDesperation()
 		action = gropeForDoors(state, observations, state.desperation)
-	return action
+	if action != -1:
+		return action
+	# Alright, if we're here, then we're right on the verge of panicking.
+	# Before we do that, though, one last thing we'll try –
+	# Let's check our inventory for something we can use to teleport.
+	# Maybe we can teleport our way out of where we're stuck.
+	salvation, teleTypes, indices = searchInventoryArtificial(state, observations, teleports)
+	for x in range(len(salvation)):
+		if not CONST_QUIET:
+			print("Last resort before panicking. Attempting teleport!")
+		if teleTypes[x] == 10093: # scroll of teleport
+			state.queue = [keyLookup[chr(salvation[x])]]
+			return 67 # read
+		if teleTypes[x] == 10165: # wand of teleport
+			state.queue = [keyLookup[chr(salvation[x])], 18] # target yourself
+			return 96 # zap
+	return -1
 
 def gropeForDoors(state, observations, desperation, permeability=isPassable):
 	# Similar to "explore" – not entirely, though
