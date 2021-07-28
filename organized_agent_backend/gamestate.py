@@ -61,6 +61,7 @@ class Gamestate(object):
         self.lastKnownCol = 0 # of hero
         self.lastDirection = " "
         self.queue = []
+        self.desperation = 0
         self.itemUnderfoot = ""
         self.stepsTaken = 0
         self.troubles = []
@@ -97,8 +98,7 @@ class Gamestate(object):
         dlvl = readDungeonLevel(observations)
         self.stepsTaken += 1
         if dlvl != self.lastKnownLevel:
-            # Don't update the map on the step level changes; NLE is wack on that step
-            # I think that's actually fixed now? Eh, whatever
+            # Floor changed
             self.resetDesperation()
             if not CONST_QUIET:
                 if CONST_PRINT_MAP_DURING_FLOOR_TRANSITION:
@@ -107,7 +107,6 @@ class Gamestate(object):
                 print(dlvl+1)
             self.lastKnownLevel = dlvl
             self.itemUnderfoot = ""
-            return
         row = readHeroRow(observations)
         col = readHeroCol(observations)
         if row != self.lastKnownRow or col != self.lastKnownCol:
@@ -129,8 +128,10 @@ class Gamestate(object):
                     heroYDist = abs(y - vision)
                     currRow = row + x - vision # the row of the square we're about to update
                     currCol = col + y - vision # the col of the square we're about to update
-                    glyph, char = readSquare(observations, x, y)
-                    self.dmap[dlvl][currRow][currCol] = updateMainMapSquare(dmap[dlvl][x][y], glyph, char, heroXDist, heroYDist, message)
+                    if currRow > 20 or currRow < 0 or currCol > 78 or currCol < 0:
+                        continue
+                    glyph, char = readSquare(observations, currRow, currCol)
+                    self.dmap[dlvl][currRow][currCol] = updateMainMapSquare(self.dmap[dlvl][currRow][currCol], glyph, char, heroXDist, heroYDist, message)
         #if message.find("You feel feverish") != -1:
         #    self.troubles.append(handleLycanthropy)
         #    print("\"" + message + "\"")
@@ -138,7 +139,7 @@ class Gamestate(object):
             # Figure out which door it was referring to
             # If the hero is stunned or confused, we might mark the wrong square, but it'll be corrected on the next update
             # TODO "RODNEY": Enable diagonals
-            # When you do, don't forget to modify lockpick behavior in annoyances.py, too!
+            # When you do, don't forget to modify lockpick behavior in annoyances.py and kicking behavior in obstacles.py, too!
             if self.lastDirection == "N" and row > 0: # north
                 self.dmap[dlvl][row-1][col] = "+"
             if self.lastDirection == "E" and col < 78: # east
@@ -151,7 +152,7 @@ class Gamestate(object):
             # Figure out which door it was referring to
             # If the hero is stunned or confused, we might mark the wrong square, but it'll be corrected on the next update
             # TODO "RODNEY": Enable diagonals
-            # When you do, don't forget to modify lockpick behavior in annoyances.py, too!
+            # When you do, don't forget to modify lockpick behavior in annoyances.py and kicking behavior in obstacles.py, too!
             if self.lastDirection == "N" and row > 0: # north
                 self.dmap[dlvl][row-1][col] = "."
             if self.lastDirection == "E" and col < 78: # east
@@ -244,8 +245,16 @@ class Gamestate(object):
             print("")
     def incrementDesperation(self):
         self.desperation += CONST_DESPERATION_RATE
+        if self.desperation == 3 and not CONST_QUIET:
+            print("Searching for secret doors.")
+        if self.desperation == 12 and not CONST_QUIET:
+            print("Agent is a little desperate...")
+        if self.desperation == 21 and not CONST_QUIET:
+            print("Agent is running out of ideas...")
         return
     def resetDesperation(self):
+        if self.desperation > 0 and not CONST_QUIET:
+            print("Aha – somewhere new to explore!")
         self.desperation = 0
         return
     def printMap(self, dlvl=-1):
@@ -261,15 +270,43 @@ class Gamestate(object):
             print("") # end line of printout
         print("")
     def eliminate(self, appearance, actual, item_class):
+        if item_class == 3:
+            print("Fatal error: Attempted to identify armor. (Not yet supported)")
+            print("Appearance: ",end="")
+            print(appearance,end="; actual: ")
+            print(actual,end="; function: eliminate (gamestate.py)\n")
+            exit(1)
         self.identifications[item_class].eliminate(appearance, actual)
     def confirm(self, appearance, actual, item_class):
+        if item_class == 3:
+            print("Fatal error: Attempted to identify armor. (Not yet supported)")
+            print("Appearance: ",end="")
+            print(appearance,end="; actual: ")
+            print(actual,end="; function: confirm (gamestate.py)\n")
+            exit(1)
         self.identifications[item_class].confirm(appearance, actual)
     def markScrollExists(self, appearance):
         for x in range(20):
             # Rule out all the "dummy" possibilities for this scroll type
             self.identifications[9].eliminate(appearance, 20000+x)
     def checkIfIs(self, appearance, actual, item_class):
+        if item_class == 3:
+            print("Fatal error: Attempted to identify armor. (Not yet supported)")
+            print("Appearance: ",end="")
+            print(appearance,end="; actual: ")
+            print(actual,end="; function: checkIfIs (gamestate.py)\n")
+            exit(1)
         return self.identifications[item_class].isConfirmedAs(appearance, actual)
+    def cacheInventory(self, observations):
+        # When we're hallucinating, we need to use inv_strs to figure out what's what
+        # But that's slow, so we only want to have to do this once per step,
+        # rather than every time we want to search our inventory for something.
+        # That's where this function comes in.
+        self.cache = []
+        for x in range(len(observations["inv_strs"])):
+            if readInventoryItemDesc(observations, x) == "":
+                self.cache.append(5976)
+            self.cache.append(identifyLoot(readInventoryItemDesc(observations, x)))
     
 def makeEmptyMap(depth,default):
     # Returns a 3D array, dimensioned to correspond to the dungeon's squares

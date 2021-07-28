@@ -6,7 +6,7 @@ from .inventory import *
 def searchAndProceed(state, observations):
 	willingToPass = isPassable.copy()
 	# If we have a lockpick, we can get past locked doors
-	if len(searchInventory(observations, lockpicks)[0]) > 0:
+	if len(searchInventory(state, observations, lockpicks)[0]) > 0:
 		willingToPass["+"] = True
 	
 	action, trashcan = pathfind(state, observations, target="$", permeability=willingToPass, searchRange=8)

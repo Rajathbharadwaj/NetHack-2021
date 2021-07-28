@@ -49,4 +49,5 @@ def narrateGame(state, observations):
 	
 	if readMessage(observations).find("You feel feverish") != -1:
 		print("Agent is infected with lycanthropy!")
-		
+	if readMessage(observations).find("are freaked out") != -1 or readMessage(observations).find("Everything looks so cosmic") != -1:
+		print("Agent's observations are compromised!")

@@ -12,13 +12,16 @@ from .logicgrid import *
 CONST_TREAT_UNKNOWN_AS_PASSABLE = True # I've never yet set this to false but I'm keeping the option right now – you never know
 CONST_MESSAGE_STREAK_THRESHOLD = 200 # Panic if at least this many of the same message appear in a row
 CONST_INVENTORY_REVIEW_FREQUENCY = 50 # Check inventory for formal identification every # steps
+CONST_MAX_VISION = 3 # Increasing this will make the agent make better decisions, but will greatly increase runtime
 
 CONST_AGENDA = [] # Array is populated at the end of this file
 
 def chooseAction(state, observations):
     # This is this file's equivalent of a main method.
     # For organization's sake, it really shouldn't be much more complicated than "call function, see if it returned an action, repeat"
-    state.updateMap(observations)
+    if readHeroStatus(observations, 9): # Hallucination
+        state.cacheInventory(observations)
+    state.updateMap(observations, vision=CONST_MAX_VISION)
     handleItemUnderfoot(state, observations)
     narrateGame(state, observations)
     passiveItemIdentification(state, observations)
@@ -26,9 +29,15 @@ def chooseAction(state, observations):
     action = state.popFromQueue()
     if action != -1:
         return action
-    #if(len(searchInventoryArtificial(state, observations, teleports)[0]) == 0): # Uncomment this to startscum for a specific item
-    #    state.queue = [7]
-    #    return 65
+    
+    # Uncomment this to startscum for a specific item
+    """
+    list, trashcan, indices = searchInventory(state, observations, teles)
+    if(len(list) == 0): 
+        state.queue = [7]
+        return 65
+    """
+    
     for protocol in CONST_AGENDA:
         action = protocol(state,observations)
         if action == None:
@@ -113,7 +122,7 @@ def routineCheckup(state, observations):
     # TODO: Evaluate your current condition – heal if appropriate, eat if you're hungry, etc.
     if observations["blstats"][21] > 1:
         # Hero is hungry. Eat food!
-        comestibles, foodTypes, indices = searchInventory(observations, permafood)
+        comestibles, foodTypes, indices = searchInventory(state, observations, permafood)
         for x in range(len(comestibles)):
             state.queue = [keyLookup[chr(comestibles[x])]]
             return 35 # eat
@@ -147,12 +156,20 @@ def passiveItemIdentification(state, observations):
     # Every 50 steps, check our inventory to see if anything got formally identified
     if state.stepsTaken % 50 != 1:
         return
-    trashcan, types, indices = searchInventory(observations, identifiables)
+    if readHeroStatus(observations, 9): # Hallucination
+        # We need inventory glyph IDs available to do any passive item identification,
+        # and when we're hallucinating, inventory glyph IDs are misrepresented.
+        # Therefore, passive inventory identification must be put on hold for that time.
+        return
+    trashcan, types, indices = searchInventory(state, observations, identifiables)
     for x in range(len(indices)):
         desc = readInventoryItemDesc(observations, indices[x])
         oclass = readInventoryItemClass(observations, indices[x])
         descGlyph = identifyLoot(desc)[0]
         if descGlyph < 10000:
+            continue
+        if oclass == 3:
+            # We don't really identify armor yet, because armor has subtypes that aren't labelled in the object class
             continue
         state.identifications[oclass].confirm(types[x],descGlyph)
 

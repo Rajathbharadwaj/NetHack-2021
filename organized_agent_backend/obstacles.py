@@ -18,7 +18,7 @@ def evaluateObstacles(state, observations):
 	heroRow = readHeroRow(observations)
 	heroCol = readHeroCol(observations)
 	dirs = iterableOverVicinity(observations,True)
-	for x in range(8):
+	for x in range(4): # When you take care of TODO "RODNEY" in gamestate.py, come back and change this to range(8)
 		if dirs[x] == None:
 			continue # out of bounds
 		row, col, str = dirs[x]

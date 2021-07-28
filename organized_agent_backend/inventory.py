@@ -6,10 +6,11 @@
 from .items import *
 from .gamestate import *
 from .logicgrid import identifiables
+from .utilities import *
 
 # TODO: Add a function that tells you what weapon is wielded
 
-def searchInventory(observations, desired):
+def searchInventory(state, observations, desired):
 	# Look in the inventory for an item whose glyph number is one of the ones in desired
 	# If one or more is found, report their inventory slots and which glyph they are
 	letters = []
@@ -17,7 +18,7 @@ def searchInventory(observations, desired):
 	indices = []
 	for x in range(len(observations["inv_glyphs"])):
 		for y in desired:
-			if observations["inv_glyphs"][x] == y:
+			if readInventoryGlyph(state, observations, x) == y:
 				letters.append(observations["inv_letters"][x])
 				types.append(y)
 				indices.append(x)
@@ -28,49 +29,32 @@ def searchInventoryArtificial(state, observations, desired):
 	letters = []
 	types = []
 	indices = []
+	if readHeroStatus(observations, 9): # Hallucination
+		# If we're hallucinating, we need to do things differently,
+		# because the raw glyph IDs are not available.
+		# Fortunately, when hallucinating,
+		# searchInventory automatically goes by description,
+		# which automatically yields items' identified states.
+		# So a potion of healing would be marked as glyph 10063.
+		
+		# The downside is that while hallucinating,
+		# we're dependent on the game to tell us what's what,
+		# so if we're also afflicted with amnesia, we may miss
+		# out on information that we recorded and could put to use.
+		# But this isn't too big a concern...
+		# amnesia + hallucination doesn't happen too often.
+
+		return searchInventory(state, observations, desired)
 	for x in range(len(observations["inv_glyphs"])):
 		if not (observations["inv_glyphs"][x] in identifiables):
 			continue
 		oclass = readInventoryItemClass(observations, x)
 		for y in desired:
-			if state.checkIfIs(observations["inv_glyphs"][x], y, oclass):
+			if state.checkIfIs(readInventoryGlyph(state, observations, x), y, oclass):
 				letters.append(observations["inv_letters"][x])
 				types.append(y)
 				indices.append(x)
 	return letters, types, indices
-
-def readBUC(description):
-	if description.find("unholy water") != -1:
-		return "c"
-	if description.find("cursed") != -1:
-		return "c"
-	if description.find("holy water") != -1:
-		return "b"
-	if description.find("blessed") != -1:
-		return "b"
-	if description.find("uncursed") != -1:
-		return "u"
-	return "?"
-
-def identifyLoot(description):
-	if description.find("for sale") != -1:
-		return -1, "" # TODO: Interact with shops (for now we just make a point of not attempting to shoplift)
-	if description.find("unholy water") != -1:
-		return 2203, "c"
-	if description.find("holy water") != -1:
-		return 2203, "b"
-	beatitude = readBUC(description)
-	# TODO: Figure out how to tell if we're a priest
-	# If we're a priest, we should always return "u" beatitude if we would otherwise return "?"
-	# TODO: Figure out what to do with identified scrolls/potions/etc (they have a completely different name from any base name)
-	for x in range(len(itemNames)):
-		# We'll check the items in reverse order in the list
-		# This is because generic versions of items (e.g. "arrow" vs "runed arrow") appear first but should be evaluated last
-		# Otherwise all runed arrows will be treated as regular arrows!
-		index = len(itemNames)-x-1
-		if description.find(itemNames[index]) != -1:
-			return itemLookup[index], beatitude
-	return -1, ""
 
 def isWorthTaking(state, observations, itemID, beatitude):
 	# Returns TRUE if we should take this item

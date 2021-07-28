@@ -27,7 +27,7 @@ def resolveAnnoyances(state, observations):
 	return action
 
 def butcherFloatingEyes(state, observations):
-	handyBlindfolds, types, indices = searchInventory(observations, blinds)
+	handyBlindfolds, types, indices = searchInventory(state, observations, blinds)
 	if len(handyBlindfolds) == 0:
 		return -1 # No blindfold, move on with our lives
 	# TODO: Pick the best blindfold available if we have more than one, right now we just pick whichever comes to hand first
@@ -52,7 +52,7 @@ def butcherFloatingEyes(state, observations):
 		return -1 # No floating eye in range.
 
 def pickLocks(state, observations):
-	handyLockpicks, types, indices = searchInventory(observations, lockpicks)
+	handyLockpicks, types, indices = searchInventory(state, observations, lockpicks)
 	if len(handyLockpicks) == 0:
 		return -1 # No lockpick, move on with our lives
 	# TODO: Pick the best lockpick available if we have more than one, right now we just pick whichever comes to hand first
@@ -85,7 +85,7 @@ def pickLocks(state, observations):
 def handleLycanthropy(state, observations):
 	# (Holy water is more versatile than wolfsbane,
 	# so given the choice we'll use the wolfsbane and conserve the holy water)
-	handyWolfsbane = searchInventory(observations, [2164])[0][0]
+	handyWolfsbane = searchInventory(state, observations, [2164])[0][0]
 	if handyWolfsbane != -1:
 		state.queue = [handyWolfsbane]
 		return 35, True # Eat the wolfsbane – problem solved

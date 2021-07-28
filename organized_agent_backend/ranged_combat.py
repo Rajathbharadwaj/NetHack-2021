@@ -18,7 +18,7 @@ def throwProjectile(state, observations, row=-1, col=-1, isHypothetical=False):
 	# isHypothetical, by the way, disables side effects (specificially, the side effect of queueing up the throw action)
 	
 	# First things first, do we have anything to shoot with?
-	handyProjectiles, types, indices = searchInventory(observations, basicProjectiles)
+	handyProjectiles, types, indices = searchInventory(state, observations, basicProjectiles)
 	if len(handyProjectiles) == 0:
 		return -1, -1 # No projectile, move on with our lives
 	# TODO: Pick the best projectile available if we have more than one, right now we just pick whichever comes to hand first
@@ -161,7 +161,7 @@ def throwProjectile(state, observations, row=-1, col=-1, isHypothetical=False):
 
 def alignToThrow(state, observations):
 	# You can only throw in one of eight directions. So if the monster isn't in one of those directions, let's make it so!
-	handyProjectiles, types, indices = searchInventory(observations, basicProjectiles)
+	handyProjectiles, types, indices = searchInventory(state, observations, basicProjectiles)
 	if len(handyProjectiles) == 0:
 		return -1 # No projectile, move on with our lives
 	

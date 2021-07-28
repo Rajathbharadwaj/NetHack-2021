@@ -1,5 +1,6 @@
 import numpy as np
 from .items import *
+from nle import nethack
 # NOTE: Do NOT import gamestate.py or behaviors.py or anything else like that.
 # This is supposed to be easily imported without any worries of circular dependencies.
 
@@ -130,11 +131,94 @@ def readSquare(observations, row, col):
     char = observations["chars"][row][col]
     return glyph, char
 
+def readBUC(description):
+    # Moved here from inventory.py because it's a dependency of readInventoryGlyph which belongs here
+    if description.find("unholy water") != -1:
+        return "c"
+    if description.find("cursed") != -1:
+        return "c"
+    if description.find("holy water") != -1:
+        return "b"
+    if description.find("blessed") != -1:
+        return "b"
+    if description.find("uncursed") != -1:
+        return "u"
+    return "?"
+
+def identifyLoot(description):
+    # Moved here from inventory.py because it's a dependency of readInventoryGlyph which belongs here
+    if description.find("for sale") != -1:
+        return -1, "" # TODO: Interact with shops (for now we just make a point of not attempting to shoplift)
+    if description.find("unholy water") != -1:
+        return 2203, "c"
+    if description.find("holy water") != -1:
+        return 2203, "b"
+    beatitude = readBUC(description)
+    # TODO: Figure out how to tell if we're a priest
+    # If we're a priest, we should always return "u" beatitude if we would otherwise return "?"
+    # TODO: Figure out what to do with identified scrolls/potions/etc (they have a completely different name from any base name)
+    for x in range(len(itemNames)):
+        # We'll check the items in reverse order in the list
+        # This is because generic versions of items (e.g. "arrow" vs "runed arrow") appear first but should be evaluated last
+        # Otherwise all runed arrows will be treated as regular arrows!
+        index = len(itemNames)-x-1
+        if description.find(itemNames[index]) != -1:
+            return itemLookup[index], beatitude
+    return -1, ""
+
+def readInventoryGlyph(state, observations, index):
+    if readHeroStatus(observations, 9): # Hallucination
+        # If we're hallucinating, we can't just look at the glyph IDs, because they're compromised.
+        # So instead we gotta figure out what's what by the description.
+        # WARNING: Under these conditions, we return an item's confirmed identity,
+        # whereas normally we'd return its appearance.
+        return state.cache[index]
+    return observations["inv_glyphs"][index]
+
 def readInventoryItemDesc(observations, index):
     return bytes(observations["inv_strs"][index]).decode('ascii').replace('\0','')
 
 def readInventoryItemClass(observations, index):
     return observations["inv_oclasses"][index]
+
+def readHeroStatus(observations, statusToCheck):
+    # Checks if the hero is afflicted with a specific status condition, indicated by number
+    # Options are:
+        # (0) Petrification
+        # (1) Degeneration into slime
+        # (2) Strangulation
+        # (3) Food poisoning
+        # (4) Disease
+        # (5) Blindness
+        # (6) Deafness
+        # (7) Stunning
+        # (8) Confusion
+        # (9) Hallucination
+        # (10) Levitation
+        # (11) Flight
+        # (12) Riding
+    status = [
+        bool(observations["blstats"][nethack.NLE_BL_CONDITION] & nethack.BL_MASK_STONE),
+        bool(observations["blstats"][nethack.NLE_BL_CONDITION] & nethack.BL_MASK_SLIME),
+        
+        #bool(observations["blstats"][nethack.NLE_BL_CONDITION] & nethack.BL_MASK_STRNGL),
+        bool(observations["blstats"][nethack.NLE_BL_CONDITION] & 0x00000004),
+        
+        bool(observations["blstats"][nethack.NLE_BL_CONDITION] & nethack.BL_MASK_FOODPOIS),
+        
+        #bool(observations["blstats"][nethack.NLE_BL_CONDITION] & nethack.BL_MASK_TERMILL),
+        bool(observations["blstats"][nethack.NLE_BL_CONDITION] & 0x00000010),
+        
+        bool(observations["blstats"][nethack.NLE_BL_CONDITION] & nethack.BL_MASK_BLIND),
+        bool(observations["blstats"][nethack.NLE_BL_CONDITION] & nethack.BL_MASK_DEAF),
+        bool(observations["blstats"][nethack.NLE_BL_CONDITION] & nethack.BL_MASK_STUN),
+        bool(observations["blstats"][nethack.NLE_BL_CONDITION] & nethack.BL_MASK_CONF),
+        bool(observations["blstats"][nethack.NLE_BL_CONDITION] & nethack.BL_MASK_HALLU),
+        bool(observations["blstats"][nethack.NLE_BL_CONDITION] & nethack.BL_MASK_LEV),
+        bool(observations["blstats"][nethack.NLE_BL_CONDITION] & nethack.BL_MASK_FLY),
+        bool(observations["blstats"][nethack.NLE_BL_CONDITION] & nethack.BL_MASK_RIDE)
+    ]
+    return status[statusToCheck]
 
 def iterableOverVicinity(observations = [], returnDirections = False, x = -1, y = -1):
     # There are several situations where we want to check the eight squares surrounding us for some purpose or other.

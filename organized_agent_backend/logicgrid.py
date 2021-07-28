@@ -33,6 +33,8 @@ class LogicGrid(object):
 		if appearanceIndex == -1:
 			if not CONST_QUIET:
 				print("Error code 777A: Something that called \"couldBe\" (logicgrid.py) didn't give a valid appearance!")
+				print("(Appearance given: ",end="")
+				print(appearance,end=")\n")
 			return False
 		actualIndex = BinarySearch(self.possibilityList[appearanceIndex], actual)
 		return (actualIndex != -1)
@@ -41,6 +43,8 @@ class LogicGrid(object):
 		if appearanceIndex == -1:
 			if not CONST_QUIET:
 				print("Error code 777B: Something that called \"isConfirmedAs\" (logicgrid.py) didn't give a valid appearance!")
+				print("(Appearance given: ",end="")
+				print(appearance,end=")\n")
 			return False
 		return (len(self.possibilityList[appearanceIndex]) == 1 and self.possibilityList[appearanceIndex][0] == actual)
 	def eliminate(self, appearance, actual):
@@ -48,6 +52,8 @@ class LogicGrid(object):
 		if appearanceIndex == -1:
 			if not CONST_QUIET:
 				print("Error code 777C: Something that called \"eliminate\" (logicgrid.py) didn't give a valid appearance!")
+				print("(Appearance given: ",end="")
+				print(appearance,end=")\n")
 			return
 		actualIndex = BinarySearch(self.possibilityList[appearanceIndex], actual)
 		if actualIndex == -1:
@@ -74,6 +80,8 @@ class LogicGrid(object):
 		if appearanceIndex == -1:
 			if not CONST_QUIET:
 				print("Error code 777D: Something that called \"confirm\" (logicgrid.py) didn't give a valid appearance!")
+				print("(Appearance given: ",end="")
+				print(appearance,end=")\n")
 			return
 		actualIndex = BinarySearch(self.possibilityList[appearanceIndex], actual)
 		if actualIndex == -1:
