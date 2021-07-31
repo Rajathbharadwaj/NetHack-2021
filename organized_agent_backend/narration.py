@@ -14,6 +14,54 @@ CONST_QUIET = False # Enable to silence all prints about gamestate except fatal 
 CONST_STATUS_UPDATE_PERIOD = 2000 # Print the map out every <#> steps
 CONST_PRINT_MAP_DURING_FLOOR_TRANSITION = False # I mean... this prints the map during floor transition. What else can I say?
 
+statusAfflictionLabels = [
+	"[STONING]", # stoning
+	"[SLIMING]", # sliming
+	"[STRANGLED]", # strangulation
+	"[FOOD POISONING]", # food poisoning
+	"[DISEASE]", # disease
+	"[blindness]", # blindness
+	"[deafness]", # deafness
+	"[stunned]", # stunning
+	"[confused]", # confusion
+	"[hallucinating]", # hallucination
+	"[levitating]", # levitation
+	"[flying]", # flight
+	"[riding]" # riding
+]
+
+statusAfflictionMessages = [
+	"CRITICAL: Agent is petrifying!!", # stoning
+	"URGENT: Agent is sliming!!", # sliming
+	"URGENT: Amulet of Strangulation!", # strangulation
+	"WARNING: Agent ate something tainted!", # food poisoning
+	"WARNING: Agent is withering away!", # disease
+	"Agent can't see!", # blindness
+	"Agent can't hear!", # deafness
+	"Agent staggers!", # stunning
+	"Agent is lightheaded!", # confusion
+	"Agent's observations are compromised!", # hallucination
+	"Agent is floating in mid-air.", # levitation
+	"Agent takes to the air.", # flight
+	"Agent mounts their faithful steed." # riding
+]
+
+statusCuredMessages = [
+	"Phew... Agent is no longer petrifying.", # stoning
+	"Phew... the slime is purged.", # sliming
+	"Phew... the agent can breathe.", # strangulation
+	"Phew... agent's stomach settles.", # food poisoning
+	"Phew... agent is cured.", # disease
+	"Agent can see again.", # blindness
+	"Agent can hear again.", # deafness
+	"Agent regains balance.", # stunning
+	"Agent's eyes regain focus.", # confusion
+	"Agent's observations are restored.", # hallucination
+	"Agent's feet return to the ground.", # levitation
+	"Agent lands.", # flight
+	"Agent dismounts." # riding
+]
+
 def narrateGame(state, observations):
 	if CONST_QUIET:
 		return
@@ -49,5 +97,22 @@ def narrateGame(state, observations):
 	
 	if readMessage(observations).find("You feel feverish") != -1:
 		print("Agent is infected with lycanthropy!")
-	if readMessage(observations).find("are freaked out") != -1 or readMessage(observations).find("Everything looks so cosmic") != -1:
-		print("Agent's observations are compromised!")
+	
+	for x in range(13):
+		if readHeroStatus(observations, x) and not state.narrationStatus["status"][x]:
+			state.narrationStatus["status"][x] = True
+			#print(statusAfflictionMessages[x])
+			print("\"" + readMessage(observations) + "\" " + statusAfflictionLabels[x])
+		if (not readHeroStatus(observations, x)) and state.narrationStatus["status"][x]:
+			state.narrationStatus["status"][x] = False
+			print(statusCuredMessages[x])
+	
+	if readMessage(observations).find("It's a tree.") != -1:
+		print("Found a tree. Candidates: ",end="")
+		dirs = iterableOverVicinity(observations)
+		for x in range(4):
+			if dirs[x] == None:
+				continue # out of bounds
+			row, col = dirs[x]
+			print(readSquare(observations, row, col),end=" ")
+		print("")

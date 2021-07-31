@@ -38,6 +38,30 @@ def evaluateObstacles(state, observations):
 		return action
 	
 	action = gropeForDoors(state, observations, state.desperation)
+	while action == -1 and state.desperation < 25:
+		state.incrementDesperation()
+		action = gropeForDoors(state, observations, state.desperation)
+	if action != -1:
+		return action
+	
+	# ...are there any floating eyes we can clear out of the way?
+	
+	for x in range(8):
+		if dirs[x] == None:
+			continue # out of bounds
+		row, col, str = dirs[x]
+		if state.readMap(row,col) == "e":
+			if not CONST_QUIET:
+				print("Attacking floating eye, unprotected. Here goes.")
+			state.queue = [x] # appropriate direction
+			return 40 # fight
+	
+	willingToPass["e"] = True
+	action = pathfind(state, observations, target=">?", permeability=willingToPass)[0]
+	if action != -1:
+		return action
+	
+	action = gropeForDoors(state, observations, state.desperation)
 	while action == -1 and state.desperation < 30:
 		state.incrementDesperation()
 		action = gropeForDoors(state, observations, state.desperation)
@@ -60,7 +84,7 @@ def evaluateObstacles(state, observations):
 	return -1
 
 def gropeForDoors(state, observations, desperation, permeability=isPassable):
-	# Similar to "explore" – not entirely, though
+	# Similar to "pathfind" – not entirely, though
 	# We're looking for a nearby wall we can search for secret doors
 	# As "desperation" increases, we consider farther-away walls, and search more times
 	# Desperation being # means search each wall within # moves # times each

@@ -30,7 +30,8 @@ class Gamestate(object):
             "quit_game" : False,
             "hp_threshold" : 0, # 1 means agent reached half health, 2 means agent reached quarter health. Resets to 0 when healed to full health.
             "hunger_threshold" : 0, # Tracks hunger severity, we want to print exactly once when we reach Weak status
-            "weight_threshold" : 0 # Tracks encumbrance severity, we want to print exactly once when we reach Burdened status
+            "weight_threshold" : 0, # Tracks encumbrance severity, we want to print exactly once when we reach Burdened status
+            "status" : [False] * 13 # Tracks each status ailment separately
         }
         self.lastMessage = ""
         self.messageStreak = 0 # Used to track if we're stuck against a wall or something
@@ -70,7 +71,8 @@ class Gamestate(object):
             "quit_game" : False,
             "hp_threshold" : 0,
             "hunger_threshold" : 0,
-            "weight_threshold" : 0
+            "weight_threshold" : 0,
+            "status" : [False] * 13 # Tracks each status ailment separately
         }
         self.lastMessage = ""
         self.messageStreak = 0
@@ -244,16 +246,15 @@ class Gamestate(object):
                 print("") # end line of printout
             print("")
     def incrementDesperation(self):
+        oldDesp = self.desperation
         self.desperation += CONST_DESPERATION_RATE
-        if self.desperation == 3 and not CONST_QUIET:
-            print("Searching for secret doors.")
-        if self.desperation == 12 and not CONST_QUIET:
+        if self.desperation >= 10 and oldDesp < 10 and not CONST_QUIET:
             print("Agent is a little desperate...")
-        if self.desperation == 21 and not CONST_QUIET:
+        if self.desperation >= 20 and oldDesp < 20 and not CONST_QUIET:
             print("Agent is running out of ideas...")
         return
     def resetDesperation(self):
-        if self.desperation > 0 and not CONST_QUIET:
+        if self.desperation >= 10 and not CONST_QUIET:
             print("Aha – somewhere new to explore!")
         self.desperation = 0
         return
@@ -355,7 +356,9 @@ def updateMainMapSquare(previousMarking, observedGlyph, observedChar, heroXDist,
     if observedChar == 96: # Boulder
         return "`"
     if observedGlyph == 2376: # Iron bars
-       return "#"
+        return "#"
+    if observedGlyph == 2377: # Tree
+        return "±"
     if observedGlyph >= 381 and observedGlyph <= 761: # Pet
         return "p"
     if observedGlyph == 28: # Floating eye

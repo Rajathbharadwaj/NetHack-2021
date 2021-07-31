@@ -8,6 +8,8 @@ def searchAndProceed(state, observations):
 	# If we have a lockpick, we can get past locked doors
 	if len(searchInventory(state, observations, lockpicks)[0]) > 0:
 		willingToPass["+"] = True
+	if len(searchInventory(state, observations, blinds)[0]) > 0:
+		willingToPass["e"] = True
 	
 	action, trashcan = pathfind(state, observations, target="$", permeability=willingToPass, searchRange=8)
 	if action != -1:

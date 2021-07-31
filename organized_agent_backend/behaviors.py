@@ -79,7 +79,9 @@ def advancePrompts(state, observations):
     # If the game is waiting for the player to press enter, press enter
     if observations["misc"][2]:
         return 19
-    # If the game is waiting for a y/n prompt, answer y.
+    # If the game is waiting for a y/n prompt, answer y by default. (Cancelling an action is just asking to get stuck.)
+    # But, there are exceptions, where we don't want to follow through.
+    # TODO
     if observations["misc"][0]:
         return 7
     # If the game is waiting for a text prompt, just press enter and ask for the default for now.

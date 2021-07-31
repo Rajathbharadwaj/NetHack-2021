@@ -22,7 +22,8 @@ isPassable = {
     "s" : False,
     "+" : False,
     ">" : True,
-    "p" : True
+    "p" : True,
+    "±" : False
 }
 
 numericCompass = [
