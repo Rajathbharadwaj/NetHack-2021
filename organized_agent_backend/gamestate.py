@@ -359,6 +359,10 @@ def updateMainMapSquare(previousMarking, observedGlyph, observedChar, heroXDist,
         return "#"
     if observedGlyph == 2377: # Tree
         return "±"
+    if observedGlyph == 2386: # Throne
+        return "_"
+    if observedGlyph == 2389: # Sink
+        return "%"
     if observedGlyph >= 381 and observedGlyph <= 761: # Pet
         return "p"
     if observedGlyph == 28: # Floating eye

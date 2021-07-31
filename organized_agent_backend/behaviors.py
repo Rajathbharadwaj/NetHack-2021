@@ -12,7 +12,7 @@ from .logicgrid import *
 CONST_TREAT_UNKNOWN_AS_PASSABLE = True # I've never yet set this to false but I'm keeping the option right now – you never know
 CONST_MESSAGE_STREAK_THRESHOLD = 200 # Panic if at least this many of the same message appear in a row
 CONST_INVENTORY_REVIEW_FREQUENCY = 50 # Check inventory for formal identification every # steps
-CONST_MAX_VISION = 3 # Increasing this will make the agent make better decisions, but will greatly increase runtime
+CONST_MAX_VISION = -1 # Increasing this will make the agent make better decisions, but will greatly increase runtime
 
 CONST_AGENDA = [] # Array is populated at the end of this file
 
