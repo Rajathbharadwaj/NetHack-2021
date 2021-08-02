@@ -42,10 +42,12 @@ itemNames = [
 	"crude arrow",
 	"silver arrow",
 	"bamboo arrow",
+	"ya",
 	"arrow",
 	"crossbow bolt",
 	"dart",
 	"throwing star",
+	"shuriken",
 	"boomerang",
 	"spear",
 	"runed spear",
@@ -61,28 +63,39 @@ itemNames = [
 	"athame",
 	"scalpel",
 	"knife",
+	"shito",
 	"stiletto",
 	"worm tooth",
 	"crysknife",
 	"axe",
 	"double-headed axe",
 	"short sword",
+	"wakizashi",
 	"runed short sword",
+	"runed wakizashi",
 	"crude short sword",
+	"crude wakizashi",
 	"broad short sword",
+	"broad wakizashi",
 	"curved sword",
 	"silver saber",
 	"broadsword",
+	"ninja-to",
 	"runed broadsword",
+	"runed ninja-to",
 	"long sword",
 	"two-handed sword",
 	"samurai sword",
+	"katana",
 	"long samurai sword",
+	"tsurugi",
 	"runed broadsword",
+	"runed ninja-to",
 	"vulgar polearm",
 	"hilted polearm",
 	"forked polearm",
 	"single-edged polearm",
+	"naginata",
 	"lance",
 	"angled poleaxe",
 	"long poleaxe",
@@ -101,11 +114,13 @@ itemNames = [
 	"staff",
 	"thonged club",
 	"flail",
+	"nunchaku",
 	"bullwhip",
 	"bow",
 	"runed bow",
 	"crude bow",
 	"long bow",
+	"yumi",
 	"sling",
 	"crossbow",
 	"leather hat",
@@ -116,9 +131,13 @@ itemNames = [
 	"conical hat",
 	"dented pot",
 	"plumed helmet",
+	"plumed kabuto",
 	"etched helmet",
+	"etched kabuto",
 	"crested helmet",
+	"crested kabuto",
 	"visored helmet",
+	"visored kabuto",
 	"gray dragon scale mail",
 	"silver dragon scale mail",
 	"red dragon scale mail",
@@ -138,8 +157,11 @@ itemNames = [
 	"green dragon scales",
 	"yellow dragon scales",
 	"plate mail",
+	"tanko",
 	"crystal plate mail",
+	"crystal tanko",
 	"bronze plate mail",
+	"bronze tanko",
 	"splint mail",
 	"banded mail",
 	"dwarvish mithril-coat",
@@ -235,6 +257,7 @@ itemNames = [
 	"bag",
 	"key",
 	"lock pick",
+	"osaku",
 	"credit card",
 	"candle",
 	"candle",
@@ -306,6 +329,7 @@ itemNames = [
 	"lembas wafer",
 	"cram ration",
 	"food ration",
+	"gunyoki",
 	"K-ration",
 	"C-ration",
 	"ruby potion",
@@ -943,6 +967,7 @@ itemNames = [
 	"versus poison", # 10055
 	# Potions
 	"of booze", # 10056
+	"of sake", # 10056
 	"of fruit juice", # 10057
 	"potion of see invisible", # 10058
 	"potions of see invisible", # as above
@@ -1097,9 +1122,11 @@ itemLookup = [
 	1909,
 	1910,
 	1911,
+	1911, # true name
 	1912,
 	1913,
 	1914,
+	1914, # true name
 	1915,
 	1916,
 	1917,
@@ -1115,28 +1142,39 @@ itemLookup = [
 	1927,
 	1928,
 	1929,
+	1929, # samurai alt name
 	1930,
 	1931,
 	1932,
 	1933,
 	1934,
 	1935,
+	1935, # samurai alt name
 	1936,
+	1936, # samurai alt name
 	1937,
+	1937, # samurai alt name
 	1938,
+	1938, # samurai alt name
 	1939,
 	1940,
 	1941,
+	1941, # samurai alt name
 	1942,
+	1942, # samurai alt name
 	1943,
 	1944,
 	1945,
+	1945, # true name
 	1946,
+	1946, # true name
 	1947,
+	1947, # samurai alt name
 	1948,
 	1949,
 	1950,
 	1951,
+	1951, # samurai alt name
 	1952,
 	1953,
 	1954,
@@ -1155,11 +1193,13 @@ itemLookup = [
 	1967,
 	1968,
 	1969,
+	1969, # samurai alt name
 	1970,
 	1971,
 	1972,
 	1973,
 	1974,
+	1974, # true name
 	1975,
 	1976,
 	1977,
@@ -1170,9 +1210,13 @@ itemLookup = [
 	1982,
 	1983,
 	1984,
+	1984, # samurai alt name
 	1985,
+	1985, # samurai alt name
 	1986,
+	1986, # samurai alt name
 	1987,
+	1987, # samurai alt name
 	1988,
 	1989,
 	1990,
@@ -1192,8 +1236,11 @@ itemLookup = [
 	2004,
 	2005,
 	2006,
+	2006, # samurai alt name
 	2007,
+	2007, # samurai alt name
 	2008,
+	2008, # samurai alt name
 	2009,
 	2010,
 	2011,
@@ -1289,6 +1336,7 @@ itemLookup = [
 	2101,
 	2102,
 	2103,
+	2103, # samurai alt name
 	2104,
 	2105,
 	2106,
@@ -1360,6 +1408,7 @@ itemLookup = [
 	2172,
 	2173,
 	2174,
+	2174, # samurai alt name
 	2175,
 	2176,
 	2178,
@@ -1995,6 +2044,7 @@ itemLookup = [
 	10055,
 	# Potions
 	10056,
+	10056, # samurai alt name
 	10057,
 	10058,
 	10058, # plural

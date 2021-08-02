@@ -106,13 +106,3 @@ def narrateGame(state, observations):
 		if (not readHeroStatus(observations, x)) and state.narrationStatus["status"][x]:
 			state.narrationStatus["status"][x] = False
 			print(statusCuredMessages[x])
-	
-	if readMessage(observations).find("It's a tree.") != -1:
-		print("Found a tree. Candidates: ",end="")
-		dirs = iterableOverVicinity(observations)
-		for x in range(4):
-			if dirs[x] == None:
-				continue # out of bounds
-			row, col = dirs[x]
-			print(readSquare(observations, row, col),end=" ")
-		print("")
