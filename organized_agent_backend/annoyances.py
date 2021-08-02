@@ -24,6 +24,8 @@ def resolveAnnoyances(state, observations):
 	action = butcherFloatingEyes(state, observations)
 	if action == -1:
 		action = pickLocks(state, observations)
+	if action == -1:
+		action = obeyGuard(state, observations)
 	return action
 
 def butcherFloatingEyes(state, observations):
@@ -38,7 +40,7 @@ def butcherFloatingEyes(state, observations):
 	heroRow = readHeroRow(observations)
 	heroCol = readHeroCol(observations)
 	dirs = iterableOverVicinity(observations,True)
-	for x in range(4): # TODO: Go to gamestate.py and handle the TODO labelled "RODNEY"; then, come back and change this to range(8).
+	for x in range(8):
 		if dirs[x] == None:
 			continue # out of bounds
 		row, col, str = dirs[x]
@@ -74,6 +76,14 @@ def pickLocks(state, observations):
 			state.queue = [bestLockpick, x] # "Apply what?": bestLockpick, "In what direction?": direction
 			return 24 # apply
 	return -1 # No locked door in range.
+
+def obeyGuard(state, observations):
+	if readMessage(observations).find("Most likely all of your gold was stolen from this vault.") == -1:
+		return -1 # No guard around
+	if not CONST_QUIET:
+		print("Surrendering gold to Croesus's minion...")
+	state.queue = [112] # "Drop what?": gold
+	return 33 # drop
 
 
 # Now we get into functions that I'll call "troubles".

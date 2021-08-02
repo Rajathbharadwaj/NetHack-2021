@@ -25,7 +25,8 @@ isPassable = {
     "p" : True,
     "±" : False,
     "%" : True, # This is a sink, so if you're levitating, avoid!
-    "_" : True
+    "_" : True,
+    "*" : False
 }
 
 numericCompass = [

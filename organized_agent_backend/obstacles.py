@@ -18,7 +18,7 @@ def evaluateObstacles(state, observations):
 	heroRow = readHeroRow(observations)
 	heroCol = readHeroCol(observations)
 	dirs = iterableOverVicinity(observations,True)
-	for x in range(4): # When you take care of TODO "RODNEY" in gamestate.py, come back and change this to range(8)
+	for x in range(8):
 		if dirs[x] == None:
 			continue # out of bounds
 		row, col, str = dirs[x]
@@ -37,10 +37,10 @@ def evaluateObstacles(state, observations):
 	if action != -1:
 		return action
 	
-	action = gropeForDoors(state, observations, state.desperation)
+	action = gropeForDoors(state, observations, state.desperation, permeability=willingToPass)
 	while action == -1 and state.desperation < 25:
 		state.incrementDesperation()
-		action = gropeForDoors(state, observations, state.desperation)
+		action = gropeForDoors(state, observations, state.desperation, permeability=willingToPass)
 	if action != -1:
 		return action
 	
@@ -61,10 +61,10 @@ def evaluateObstacles(state, observations):
 	if action != -1:
 		return action
 	
-	action = gropeForDoors(state, observations, state.desperation)
+	action = gropeForDoors(state, observations, state.desperation, permeability=willingToPass)
 	while action == -1 and state.desperation < 30:
 		state.incrementDesperation()
-		action = gropeForDoors(state, observations, state.desperation)
+		action = gropeForDoors(state, observations, state.desperation, permeability=willingToPass)
 	if action != -1:
 		return action
 	# Alright, if we're here, then we're right on the verge of panicking.
@@ -97,7 +97,7 @@ def gropeForDoors(state, observations, desperation, permeability=isPassable):
 		r, c = dirs[x]
 		if state.readMap(r,c) == "X" and state.readSearchedMap(r, c) < desperation:
 			state.updateSearchedMap()
-			return 75
+			return 75 # search
 	
 	investigated = []
 	queue = []
@@ -138,12 +138,12 @@ def gropeForDoors(state, observations, desperation, permeability=isPassable):
 			if dirs[x] == None:
 				continue # out of bounds
 			r, c = dirs[x]
-			if state.readMap(r,c) == "X" and state.readSearchedMap(r,c) < desperation:
+			if state.readMap(r,c) == "?" or state.readMap(r,c) == ">":
 				firstAction = howToReach[currRow][currCol]
 				if firstAction == None:
 					return x
 				return firstAction
-			if permeability[state.readMap(r,c)]:
+			if permeability[state.readMap(r,c)] or (state.readMap(r,c) == "X" and state.readSearchedMap(r,c) < desperation):
 				if howToReach[r][c] == None and not investigated[r][c]:
 					queue.append([r,c])
 					distance[r][c] = distance[currRow][currCol] + 1

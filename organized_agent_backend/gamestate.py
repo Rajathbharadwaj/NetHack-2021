@@ -4,6 +4,7 @@ from .utilities import *
 from .annoyances import * # for the purpose of tracking troubles
 from .narration import CONST_QUIET, CONST_STATUS_UPDATE_PERIOD, CONST_PRINT_MAP_DURING_FLOOR_TRANSITION
 from .logicgrid import *
+from time import *
 
 CONST_DEAD_END_MULT = 3 # Multiply the number of times dead end squares get searched by this value
 CONST_DESPERATION_RATE = 3 # Amount by which to increment desperation
@@ -43,6 +44,7 @@ class Gamestate(object):
             10 : LogicGrid(spellbookAppearances, spellbookActuals),
             11 : LogicGrid(wandAppearances, wandActuals)
         }
+        self.episodeStartTime = clock_gettime(CLOCK_UPTIME_RAW)
     
     def reset(self):
         # Before we wipe the slate clean, we should dump core if we haven't already
@@ -84,6 +86,7 @@ class Gamestate(object):
             10 : LogicGrid(spellbookAppearances, spellbookActuals),
             11 : LogicGrid(wandAppearances, wandActuals)
         }
+        self.episodeStartTime = clock_gettime(CLOCK_UPTIME_RAW)
     
     def popFromQueue(self):
         if len(self.queue) == 0:
@@ -138,31 +141,32 @@ class Gamestate(object):
         #    self.troubles.append(handleLycanthropy)
         #    print("\"" + message + "\"")
         if message.find("This door is locked.") != -1:
-            # Figure out which door it was referring to
-            # If the hero is stunned or confused, we might mark the wrong square, but it'll be corrected on the next update
-            # TODO "RODNEY": Enable diagonals
-            # When you do, don't forget to modify lockpick behavior in annoyances.py and kicking behavior in obstacles.py, too!
-            if self.lastDirection == "N" and row > 0: # north
-                self.dmap[dlvl][row-1][col] = "+"
-            if self.lastDirection == "E" and col < 78: # east
-                self.dmap[dlvl][row][col+1] = "+"
-            if self.lastDirection == "S" and row < 20: # south
-                self.dmap[dlvl][row+1][col] = "+"
-            if self.lastDirection == "W" and col > 0: # west
-                self.dmap[dlvl][row][col-1] = "+"
+            dirs = iterableOverVicinity(observations,True)
+            for x in range(8):
+                if dirs[x] == None:
+                    continue # out of bounds
+                row, col, str = dirs[x]
+                if str == self.lastDirection:
+                    self.dmap[dlvl][row][col] = "+"
+                    break
         if message.find("You succeed in picking the lock.") != -1 or message.find("You succeed in unlocking the door.") != -1:
-            # Figure out which door it was referring to
-            # If the hero is stunned or confused, we might mark the wrong square, but it'll be corrected on the next update
-            # TODO "RODNEY": Enable diagonals
-            # When you do, don't forget to modify lockpick behavior in annoyances.py and kicking behavior in obstacles.py, too!
-            if self.lastDirection == "N" and row > 0: # north
-                self.dmap[dlvl][row-1][col] = "."
-            if self.lastDirection == "E" and col < 78: # east
-                self.dmap[dlvl][row][col+1] = "."
-            if self.lastDirection == "S" and row < 20: # south
-                self.dmap[dlvl][row+1][col] = "."
-            if self.lastDirection == "W" and col > 0: # west
-                self.dmap[dlvl][row][col-1] = "."
+            dirs = iterableOverVicinity(observations,True)
+            for x in range(8):
+                if dirs[x] == None:
+                    continue # out of bounds
+                row, col, str = dirs[x]
+                if str == self.lastDirection:
+                    self.dmap[dlvl][row][col] = "."
+                    break
+        if message.find("It's a wall.") != message.find("It's solid stone.") != -1 -1:
+            dirs = iterableOverVicinity(observations,True)
+            for x in range(8):
+                if dirs[x] == None:
+                    continue # out of bounds
+                row, col, str = dirs[x]
+                if str == self.lastDirection:
+                    self.dmap[dlvl][row][col] = "*"
+                    break
     def readMap(self, row, col, dlvl=-1):
         if dlvl == -1:
             dlvl = self.lastKnownLevel
@@ -245,6 +249,10 @@ class Gamestate(object):
                     print("S",end="")
                 print("") # end line of printout
             print("")
+        timeElapsed = clock_gettime(CLOCK_UPTIME_RAW) - self.episodeStartTime
+        stepSpeed = self.stepsTaken / timeElapsed
+        print(self.stepsTaken,end=" steps taken at an average of ")
+        print(stepSpeed,end=" Hz.\n")
     def incrementDesperation(self):
         oldDesp = self.desperation
         self.desperation += CONST_DESPERATION_RATE
@@ -374,6 +382,9 @@ def updateMainMapSquare(previousMarking, observedGlyph, observedChar, heroXDist,
     if observedGlyph >= 1144 and observedGlyph <= 1524 and (previousMarking == "?" or previousMarking == "^"):
         return "^" # A corpse you just find laying around is very likely a trap
     if (observedGlyph >= 1907 and observedGlyph <= 2352) or (observedGlyph >= 1144 and observedGlyph <= 1524):
+        if previousMarking == "*":
+            # Item is embedded in a wall. We generally can't move through walls.
+            return "*"
         if previousMarking != "@" and previousMarking != "-" and previousMarking != "~":
             # Ooh, loot! We should take a closer look...
             return "$"
@@ -385,6 +396,8 @@ def updateMainMapSquare(previousMarking, observedGlyph, observedChar, heroXDist,
             return "s" # We have a pickaxe, so shopkeep won't let us in. Don't get your hopes up if shopkeep steps away for a moment
         else:
             return "~" # Do not try to fight the shopkeeper, he's too tough for a low-level hero like us
+    if observedGlyph == 268:
+        print("Ooh, guard!")
     if observedGlyph == 268 or observedGlyph == 270: # Vault guard or Oracle
         return "~" # Again, too tough to realistically fight
     if observedGlyph <= 380:
