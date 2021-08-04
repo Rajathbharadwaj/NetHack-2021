@@ -72,6 +72,9 @@ def handleItemUnderfoot(state, observations):
         itemID, beatitude = identifyLoot(parsedLoot)
         if isWorthTaking(state, observations, itemID, beatitude):
             state.itemUnderfoot = parsedLoot
+        if itemID >= 1144 and itemID <= 1524:
+            if isWorthMunching(state, observations, itemID, beatitude):
+                state.preyUnderfoot = parsedLoot
     return
 
 def advancePrompts(state, observations):
@@ -116,6 +119,7 @@ def fightInMelee(state, observations):
             continue # out of bounds
         row, col, str = dirs[x]
         if state.readMap(row,col) == "&":
+            state.lastDirection = str
             state.queue = [x] # direction of monster
             return 40 # fight
     return -1
@@ -134,7 +138,17 @@ def routineCheckup(state, observations):
         if not CONST_QUIET:
             print("Picked up: "+state.itemUnderfoot)
         state.itemUnderfoot = ""
+        state.preyUnderfoot = ""
         return 61 # pick up
+    
+    if state.preyUnderfoot != "":
+        # There's something here worth eating, so let's do that
+        if not CONST_QUIET:
+            print("Ate: "+state.preyUnderfoot)
+        state.itemUnderfoot = ""
+        state.preyUnderfoot = ""
+        state.queue = [keyLookup["y"]]
+        return 35 # pick up
     return -1
 
 def evaluateMessageStreak(state, observations):

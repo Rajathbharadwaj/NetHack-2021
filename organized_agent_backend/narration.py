@@ -13,6 +13,7 @@ from .utilities import *
 CONST_QUIET = False # Enable to silence all prints about gamestate except fatal errors
 CONST_STATUS_UPDATE_PERIOD = 2000 # Print the map out every <#> steps
 CONST_PRINT_MAP_DURING_FLOOR_TRANSITION = False # I mean... this prints the map during floor transition. What else can I say?
+CONST_REPORT_KILLS = False # If true, prints a message whenever the agent directly kills a monster
 
 statusAfflictionLabels = [
 	"[STONING]", # stoning

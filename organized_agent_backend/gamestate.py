@@ -2,9 +2,10 @@ import numpy as np
 
 from .utilities import *
 from .annoyances import * # for the purpose of tracking troubles
-from .narration import CONST_QUIET, CONST_STATUS_UPDATE_PERIOD, CONST_PRINT_MAP_DURING_FLOOR_TRANSITION
+from .narration import CONST_QUIET, CONST_STATUS_UPDATE_PERIOD, CONST_PRINT_MAP_DURING_FLOOR_TRANSITION, CONST_REPORT_KILLS
 from .logicgrid import *
 from time import *
+from random import * # spice up narration a bit
 
 CONST_DEAD_END_MULT = 3 # Multiply the number of times dead end squares get searched by this value
 CONST_DESPERATION_RATE = 3 # Amount by which to increment desperation
@@ -15,6 +16,8 @@ class Gamestate(object):
         """ INITIALIZE MAP """
         self.dmap = makeEmptyMap(30, "?")
         self.searchMap = makeEmptyMap(30, 0)
+        self.corpseMap = makeEmptyMap(30, [-1, -1])
+        seed() # seed rng
         
         """ INITIALIZE MISC VARIABLES """
         self.lastKnownLevel = 0
@@ -24,6 +27,7 @@ class Gamestate(object):
         self.queue = []
         self.desperation = 0 # controls behavior when there's no obvious path forward
         self.itemUnderfoot = ""
+        self.preyUnderfoot = ""
         self.stepsTaken = 0
         self.troubles = []
         self.narrationStatus = {
@@ -57,6 +61,7 @@ class Gamestate(object):
         """ INITIALIZE MAP """
         self.dmap = makeEmptyMap(30, "?")
         self.searchMap = makeEmptyMap(30, 0)
+        self.corpseMap = makeEmptyMap(30, [-1, -1])
         
         """ INITIALIZE MISC VARIABLES """
         self.lastKnownLevel = 0
@@ -66,6 +71,7 @@ class Gamestate(object):
         self.queue = []
         self.desperation = 0
         self.itemUnderfoot = ""
+        self.preyUnderfoot = ""
         self.stepsTaken = 0
         self.troubles = []
         self.narrationStatus = {
@@ -158,7 +164,7 @@ class Gamestate(object):
                 if str == self.lastDirection:
                     self.dmap[dlvl][row][col] = "."
                     break
-        if message.find("It's a wall.") != message.find("It's solid stone.") != -1 -1:
+        if message.find("It's a wall.") != -1 or message.find("It's solid stone.") != -1:
             dirs = iterableOverVicinity(observations,True)
             for x in range(8):
                 if dirs[x] == None:
@@ -166,6 +172,64 @@ class Gamestate(object):
                 row, col, str = dirs[x]
                 if str == self.lastDirection:
                     self.dmap[dlvl][row][col] = "*"
+                    break
+        corpseIndexInMessage = message.find("You kill the ")
+        if corpseIndexInMessage != -1:
+            # You may notice that we don't check for "you destroy the" messages.
+            # AFAIK nothing that can possibly be created with that kind of message is safely edible,
+            # and we're a long way from needing to sacrifice monsters at altars,
+            # so such a corpse is useless to us.
+            parsedCorpse = message[corpseIndexInMessage+len("You kill the "):]
+            locatedMark = parsedCorpse.find("!")
+            if locatedMark == -1:
+                print("FATAL ERROR: \"you kill the\" message didn't end in a \"!\".")
+                print("Culprit message: \"" + message + "\"")
+                exit(1)
+            
+            parsedCorpse = (parsedCorpse[:locatedMark])
+            if CONST_REPORT_KILLS and not CONST_QUIET:
+                verb = "Killed"
+                article = " a "
+                firstLetter = parsedCorpse[0].lower()
+                if firstLetter == "a" or firstLetter == "e" or firstLetter == "i" or firstLetter == "o" or firstLetter == "u":
+                    article = " an "
+                x = randint(1, 13)
+                if x == 1:
+                    verb = "Killed"
+                if x == 2:
+                    verb = "Pwned"
+                if x == 3:
+                    verb = "Slaughtered"
+                if x == 4:
+                    verb = "Terminated"
+                if x == 5:
+                    verb = "Smashed"
+                if x == 6:
+                    verb = "Deleted"
+                if x == 7:
+                    verb = "Executed"
+                if x == 8:
+                    verb = "Removed"
+                if x == 9:
+                    verb = "Took down"
+                if x == 10:
+                    verb = "Annihilated"
+                if x == 11:
+                    verb = "Purged"
+                if x == 12:
+                    verb = "Euthanized"
+                if x == 13:
+                    verb = "Ended"
+                print(verb + article + parsedCorpse + ".")
+            parsedCorpse += " corpse"
+            corpseGlyph, trashcan = identifyLoot(parsedCorpse)
+            dirs = iterableOverVicinity(observations,True)
+            for x in range(8):
+                if dirs[x] == None:
+                    continue # out of bounds
+                row, col, str = dirs[x]
+                if str == self.lastDirection:
+                    self.corpseMap[dlvl][row][col] = [corpseGlyph, readTurn(observations)+50]
                     break
     def readMap(self, row, col, dlvl=-1):
         if dlvl == -1:
@@ -201,26 +265,7 @@ class Gamestate(object):
             r, c, str = dirs[x]
             self.searchMap[dlvl][r][c] += incrementBy
         return
-    def updateSearchedMapSquare(self, dlvl, row, col):
-        # If this square is a dead end, defined as a square cardinally adjacent to exactly one non-wall square,
-        # it's extremely likely there's a secret passage there.
-        # That being the case, it merits checking extra times, so we only increment by a fraction.
-        # This function is deprecated and will probably just be deleted soon, because it flat-out works wrong.
-        nearbyNonWalls = 0
-        if row > 0 and self.dmap[dlvl][row-1][col] != "X":
-            nearbyNonWalls += 1
-        if row < 20 and self.dmap[dlvl][row+1][col] != "X":
-            nearbyNonWalls += 1
-        if col > 0 and self.dmap[dlvl][row][col-1] != "X":
-            nearbyNonWalls += 1
-        if col < 78 and self.dmap[dlvl][row][col+1] != "X":
-            nearbyNonWalls += 1
-        
-        if nearbyNonWalls == 1:
-            self.searchMap[dlvl][row][col] += 1/CONST_DEAD_END_MULT
-        else:
-            self.searchMap[dlvl][row][col] += 1
-        return
+    
     def statusReport(self, observations):
         self.printMap()
         print("\"" + readMessage(observations) + "\"\n")

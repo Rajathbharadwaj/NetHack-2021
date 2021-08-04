@@ -130,6 +130,9 @@ def readDungeonLevel(observations):
     # Subtract one so it lines up with our zero-indexed arrays
     return observations["blstats"][12]-1
 
+def readTurn(observations):
+    return observations["blstats"][20]
+
 def readSquare(observations, row, col):
     glyph = observations["glyphs"][row][col]
     char = observations["chars"][row][col]

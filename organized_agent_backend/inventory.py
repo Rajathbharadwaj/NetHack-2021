@@ -7,6 +7,7 @@ from .items import *
 from .gamestate import *
 from .logicgrid import identifiables
 from .utilities import *
+from .corpses import *
 
 # TODO: Add a function that tells you what weapon is wielded
 
@@ -67,3 +68,38 @@ def isWorthTaking(state, observations, itemID, beatitude):
 	if itemID >= 2178 and itemID <= 2315:
 		return True # Potions, scrolls, wands, and spellbooks are similarly useful
 	return False
+
+def isWorthMunching(state, observations, itemID, beatitude):
+	# Returns TRUE if this corpse is worth eating from the floor
+	# To be checked after isWorthTaking
+	hunger = observations["blstats"][21]
+	if itemID == 1299:
+		# We like taking lichen corpses so this shouldn't come up much
+		# But later on maybe the agent might have too much stuff to carry
+		# in which case eating a lichen corpse rather than taking it makes sense
+		return (hunger >= 1)
+	
+	# Now we think about corpses that are perishable.
+	# Food poisoning is lethal, so we want to err on the side of caution.
+	# We'll assume corpses are tainted unless we know for sure otherwise.
+	
+	row = readHeroRow(observations)
+	col = readHeroCol(observations)
+	dlvl = readDungeonLevel(observations)
+	turn = readTurn(observations)
+	approvedCorpse, expirationDate = state.corpseMap[dlvl][row][col]
+	if beatitude == "b":
+		expirationDate += 20
+	if beatitude == "c":
+		expirationDate -= 20
+	# Corpses are uncursed by default, so it's safe to assume an unlabeled corpse is uncursed
+	
+	if turn > expirationDate:
+		return False # missed our window of opportunity
+	if approvedCorpse != itemID:
+		return False # this isn't the corpse we saw die, so only gods know how old it actually is
+	minPermissibleHunger = corpsePriority[itemID]
+	if minPermissibleHunger <= hunger:
+		return True
+	else:
+		return False
