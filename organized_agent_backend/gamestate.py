@@ -49,6 +49,7 @@ class Gamestate(object):
             11 : LogicGrid(wandAppearances, wandActuals)
         }
         self.episodeStartTime = clock_gettime(CLOCK_UPTIME_RAW)
+        self.nextSafePrayer = 300
     
     def reset(self):
         # Before we wipe the slate clean, we should dump core if we haven't already
@@ -93,6 +94,7 @@ class Gamestate(object):
             11 : LogicGrid(wandAppearances, wandActuals)
         }
         self.episodeStartTime = clock_gettime(CLOCK_UPTIME_RAW)
+        self.nextSafePrayer = 300
     
     def popFromQueue(self):
         if len(self.queue) == 0:

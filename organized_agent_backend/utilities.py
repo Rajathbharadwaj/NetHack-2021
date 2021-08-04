@@ -325,3 +325,8 @@ def iterableOverVicinity(observations = [], returnDirections = False, x = -1, y 
     if len(output) != 8 and not CONST_QUIET:
         print("Error code 1337 – function \"iterableOverDirs\" (utilities.py) returned wrong-sized array!")
     return output
+
+def isSafeToPray(state, observations):
+    # Returns true if it's been long enough since the last prayer that we've got a decent chance of a good outcome
+    # TODO: Check other factors which may make it unsafe to pray (god anger, etc)
+    return (readTurn(observations) >= state.nextSafePrayer)

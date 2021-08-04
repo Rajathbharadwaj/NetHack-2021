@@ -110,6 +110,13 @@ def checkForEmergencies(state, observations):
                 print("Drinking that wonderful liquid of salvation!")
             state.queue = [keyLookup[chr(salvation[x])]]
             return 64 # quaff
+    if observations["blstats"][21] >= 4 and isSafeToPray(state, observations):
+        # Hero is falling over from hunger. Maybe our god can fix it?
+        if not CONST_QUIET:
+            print("Praying for salvation...! (Problem: hunger)")
+        state.nextSafePrayer = readTurn(observations) + 1000
+        state.queue = [keyLookup["y"]] # "Really pray?": yes
+        return 62 # pray
     return -1
 
 def fightInMelee(state, observations):
