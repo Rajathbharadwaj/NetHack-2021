@@ -50,12 +50,15 @@ class Gamestate(object):
         }
         self.episodeStartTime = clock_gettime(CLOCK_UPTIME_RAW)
         self.nextSafePrayer = 300
+        self.criticalSituation = False
+        self.lastKnownLOVE = 1
     
     def reset(self):
         # Before we wipe the slate clean, we should dump core if we haven't already
         if not CONST_QUIET:
             if not self.narrationStatus["quit_game"]:
                 self.coreDump("The agent dies...")
+            print("")
             print("---------RIP---------")
             print("")
             
@@ -95,6 +98,8 @@ class Gamestate(object):
         }
         self.episodeStartTime = clock_gettime(CLOCK_UPTIME_RAW)
         self.nextSafePrayer = 300
+        self.criticalSituation = False
+        self.lastKnownLOVE = 1
     
     def popFromQueue(self):
         if len(self.queue) == 0:
@@ -120,12 +125,24 @@ class Gamestate(object):
                 print(dlvl+1)
             self.lastKnownLevel = dlvl
             self.itemUnderfoot = ""
+            self.preyUnderfoot = ""
         row = readHeroRow(observations)
         col = readHeroCol(observations)
         if row != self.lastKnownRow or col != self.lastKnownCol:
             self.itemUnderfoot = ""
+            self.preyUnderfoot = ""
         self.lastKnownRow = row
         self.lastKnownCol = col
+        if self.lastKnownLOVE < observations["blstats"][18]:
+            self.lastKnownLOVE = observations["blstats"][18]
+            if not CONST_QUIET:
+                print("Agent's LOVE increased. (to",self.lastKnownLOVE,end="")
+                print(")")
+                
+        if self.lastKnownLOVE > observations["blstats"][18]:
+            self.lastKnownLOVE = observations["blstats"][18]
+            if not CONST_QUIET:
+                print("Agent's LOVE decreased. (to ",self.lastKnownLOVE,")")
         message = readMessage(observations)
         if vision == -1:
             for x in range(21):
@@ -286,20 +303,21 @@ class Gamestate(object):
             # We panicked, so let's show the "searched" table
             for x in range(21):
                 for y in range(79):
-                    #print(self.readSearchedMap(x, y),end=" ")
                     if self.readSearchedMap(x, y) == 0:
                         print(" ",end="")
                         continue
-                    if self.readSearchedMap(x, y) <= 30:
+                    if self.readSearchedMap(x, y) <= 60:
                         print("s",end="")
                         continue
                     print("S",end="")
                 print("") # end line of printout
             print("")
+        print("FINAL STATS:")
         timeElapsed = clock_gettime(CLOCK_UPTIME_RAW) - self.episodeStartTime
         stepSpeed = self.stepsTaken / timeElapsed
         print(self.stepsTaken,end=" steps taken at an average of ")
         print(stepSpeed,end=" Hz.\n")
+        print("Agent died at LOVE",self.lastKnownLOVE)
     def incrementDesperation(self):
         oldDesp = self.desperation
         self.desperation += CONST_DESPERATION_RATE
@@ -443,8 +461,6 @@ def updateMainMapSquare(previousMarking, observedGlyph, observedChar, heroXDist,
             return "s" # We have a pickaxe, so shopkeep won't let us in. Don't get your hopes up if shopkeep steps away for a moment
         else:
             return "~" # Do not try to fight the shopkeeper, he's too tough for a low-level hero like us
-    if observedGlyph == 268:
-        print("Ooh, guard!")
     if observedGlyph == 268 or observedGlyph == 270: # Vault guard or Oracle
         return "~" # Again, too tough to realistically fight
     if observedGlyph <= 380:

@@ -78,7 +78,7 @@ def pickLocks(state, observations):
 	return -1 # No locked door in range.
 
 def obeyGuard(state, observations):
-	if readMessage(observations).find("Most likely all of your gold was stolen from this vault.") == -1:
+	if readMessage(observations).find("Please drop that gold and follow me.") == -1:
 		return -1 # No guard around
 	if not CONST_QUIET:
 		print("Surrendering gold to Croesus's minion...")

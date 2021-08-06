@@ -55,6 +55,7 @@ def chooseAction(state, observations):
         if action >= 0 and action < 8 and protocol != advancePrompts:
             state.lastDirection = numericCompass[action]
         if action != -1:
+            state.lastAction = action
             return action
     state.narrationStatus["quit_game"] = True
     state.coreDump("Agent has panicked! (Its logic gives it no move to make.)",observations)
@@ -146,15 +147,18 @@ def routineCheckup(state, observations):
             print("Picked up: "+state.itemUnderfoot)
         state.itemUnderfoot = ""
         state.preyUnderfoot = ""
+        state.corpseMap[readDungeonLevel(observations)][readHeroRow(observations)][readHeroCol(observations)][1] = -1  
         return 61 # pick up
     
-    if state.preyUnderfoot != "":
+    if (state.preyUnderfoot != "") and (readTurn(observations) <= state.corpseMap[readDungeonLevel(observations)][readHeroRow(observations)][readHeroCol(observations)][1]):
         # There's something here worth eating, so let's do that
         if not CONST_QUIET:
-            print("Ate: "+state.preyUnderfoot)
+            print("Ate: "+state.preyUnderfoot,end=" ")
+            print(state.corpseMap[readDungeonLevel(observations)][readHeroRow(observations)][readHeroCol(observations)])
         state.itemUnderfoot = ""
         state.preyUnderfoot = ""
-        state.queue = [keyLookup["y"]]
+        state.queue = [keyLookup["y"],36]
+        state.corpseMap[readDungeonLevel(observations)][readHeroRow(observations)][readHeroCol(observations)][1] = -1 
         return 35 # pick up
     return -1
 

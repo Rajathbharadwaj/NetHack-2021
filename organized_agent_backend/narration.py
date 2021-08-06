@@ -11,7 +11,12 @@ from .gamestate import *
 from .utilities import *
 
 CONST_QUIET = False # Enable to silence all prints about gamestate except fatal errors
-CONST_STATUS_UPDATE_PERIOD = 2000 # Print the map out every <#> steps
+CONST_STATUS_UPDATE_PERIOD = 1999 # Print the map out every <#> steps
+	# Changed from 2000 to 1999. 1999 is better because it's prime.
+	# Why is that important? Well, sometimes the agent gets stuck in a loop where it sees the same sequence of 2-4 messages on loop forever.
+	# If update period is a multiple of the sequence length we only ever see one message in that loop no matter how many status reports we do.
+	# Making update period prime means that a repeating sequence of N messages will be fully reported within N status reports.
+	# Modular arithmetic for the win!
 CONST_PRINT_MAP_DURING_FLOOR_TRANSITION = False # I mean... this prints the map during floor transition. What else can I say?
 CONST_REPORT_KILLS = False # If true, prints a message whenever the agent directly kills a monster
 
@@ -104,6 +109,21 @@ def narrateGame(state, observations):
 			state.narrationStatus["status"][x] = True
 			#print(statusAfflictionMessages[x])
 			print("\"" + readMessage(observations) + "\" " + statusAfflictionLabels[x])
+			if x == 3:
+				#print("Culprit: ", state.corpseMap[readDungeonLevel(observations)][readHeroRow(observations)][readHeroCol(observations)])
+				print("Current turn: ", readTurn(observations))
 		if (not readHeroStatus(observations, x)) and state.narrationStatus["status"][x]:
 			state.narrationStatus["status"][x] = False
 			print(statusCuredMessages[x])
+	
+	"""
+	if readMessage(observations).find("You don't have that object") != -1 and not state.criticalSituation:
+		print("Spotted the don't-have-that issue. Inventory:")
+		for x in range(len(observations["inv_strs"])):
+			print("\t" + chr(observations["inv_letters"][x]) + ": ",end="")
+			print("\""+readInventoryItemDesc(observations, x)+'"')
+		state.criticalSituation = True
+	"""
+	
+	if state.criticalSituation:
+		print("\"",readMessage(observations),"\"")

@@ -33,9 +33,13 @@ def evaluateObstacles(state, observations):
 	willingToPass = isPassable.copy()
 	willingToPass["+"] = True
 	willingToPass["^"] = True
-	action = pathfind(state, observations, target=">?", permeability=willingToPass)[0]
-	if action != -1:
-		return action
+	if state.stepsTaken % 10 == 0 and state.desperation >= 25:
+		# We only wanna run pathfind every ten steps to save runtime.
+		# Also, if we're at desperation 25, we'll take care of this during the below call to pathfind,
+		# so we don't pathfind twice needlessly.
+		action = pathfind(state, observations, target=">?", permeability=willingToPass)[0]
+		if action != -1:
+			return action
 	
 	action = gropeForDoors(state, observations, state.desperation, permeability=willingToPass)
 	while action == -1 and state.desperation < 25:
@@ -57,9 +61,11 @@ def evaluateObstacles(state, observations):
 			return 40 # fight
 	
 	willingToPass["e"] = True
-	action = pathfind(state, observations, target=">?", permeability=willingToPass)[0]
-	if action != -1:
-		return action
+	if state.stepsTaken % 10 == 0:
+		# We only wanna run pathfind every ten steps to save runtime.
+		action = pathfind(state, observations, target=">?", permeability=willingToPass)[0]
+		if action != -1:
+			return action
 	
 	action = gropeForDoors(state, observations, state.desperation, permeability=willingToPass)
 	while action == -1 and state.desperation < 30:
@@ -67,6 +73,15 @@ def evaluateObstacles(state, observations):
 		action = gropeForDoors(state, observations, state.desperation, permeability=willingToPass)
 	if action != -1:
 		return action
+	
+	# At this point, since we're at the end of our rope, we'll call pathfind one last time,
+	# just in case we revealed a new path during our last couple calls to gropeForDoors.
+	# Otherwise, we might panic after revealing something but before calling pathfind, which would be a shame.
+	
+	action = pathfind(state, observations, target=">?", permeability=willingToPass)[0]
+	if action != -1:
+		return action
+	
 	# Alright, if we're here, then we're right on the verge of panicking.
 	# Before we do that, though, one last thing we'll try –
 	# Let's check our inventory for something we can use to teleport.

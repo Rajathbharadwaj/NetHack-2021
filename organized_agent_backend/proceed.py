@@ -15,6 +15,13 @@ def searchAndProceed(state, observations):
 	if action != -1:
 		return action
 	
+	if state.desperation > 0 and state.stepsTaken % 10 != 0:
+		# When we have any amount of desperation, that means there's no obvious way forward.
+		# That's not entirely likely to change just on a whim. It can, but it probably won't.
+		# So, it's wasteful to spend runtime looking for a directly available way forward every single step.
+		# We'll check every ten steps instead, that should suffice.
+		return -1
+	
 	action, target = pathfind(state, observations, permeability=willingToPass)
 	if target == ">" or target == "?":
 		state.resetDesperation()
