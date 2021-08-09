@@ -10,6 +10,8 @@ def searchAndProceed(state, observations):
 		willingToPass["+"] = True
 	if len(searchInventory(state, observations, blinds)[0]) > 0:
 		willingToPass["e"] = True
+	if len(searchInventory(state, observations, pickaxes)[0]) > 0:
+		willingToPass["`"] = True
 	
 	action, trashcan = pathfind(state, observations, target="$", permeability=willingToPass, searchRange=8)
 	if action != -1:

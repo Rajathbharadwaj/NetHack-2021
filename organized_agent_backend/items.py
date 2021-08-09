@@ -23,7 +23,9 @@ heals = [10061, 10063, 10072]
 # "Teleports" = items which cause teleportation when used
 teleports = [10093, 10165]
 
-worthTaking = lockpicks + blinds + permafood + basicProjectiles + heals
+pickaxes = [1956, 2140]
+
+worthTaking = lockpicks + blinds + permafood + basicProjectiles + heals + pickaxes
 
 # These are two parallel arrays indexing the glyph IDs of every item, and giving their visible name.
 # This way, the agent can look in this table to figure out what's what, when it sees "you see here a <thing>"

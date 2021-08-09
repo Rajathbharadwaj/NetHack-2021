@@ -33,6 +33,8 @@ def evaluateObstacles(state, observations):
 	willingToPass = isPassable.copy()
 	willingToPass["+"] = True
 	willingToPass["^"] = True
+	if len(searchInventory(state, observations, pickaxes)[0]) > 0:
+		willingToPass["`"] = True
 	if state.stepsTaken % 10 == 0 and state.desperation >= 25:
 		# We only wanna run pathfind every ten steps to save runtime.
 		# Also, if we're at desperation 25, we'll take care of this during the below call to pathfind,
@@ -40,6 +42,19 @@ def evaluateObstacles(state, observations):
 		action = pathfind(state, observations, target=">?", permeability=willingToPass)[0]
 		if action != -1:
 			return action
+		
+	action = gropeForDoors(state, observations, state.desperation, permeability=willingToPass)
+	while action == -1 and state.desperation < 15:
+		state.incrementDesperation()
+		action = gropeForDoors(state, observations, state.desperation, permeability=willingToPass)
+	if action != -1:
+		return action
+	
+	handyPickaxes, types, indices = searchInventory(state, observations, pickaxes)
+	if len(handyPickaxes) != 0:
+		print("Eh, screw it. Digging straight down.")
+		state.queue = [keyLookup[chr(handyPickaxes[0])],keyLookup[">"]]
+		return 24 # apply
 	
 	action = gropeForDoors(state, observations, state.desperation, permeability=willingToPass)
 	while action == -1 and state.desperation < 25:
@@ -68,7 +83,7 @@ def evaluateObstacles(state, observations):
 			return action
 	
 	action = gropeForDoors(state, observations, state.desperation, permeability=willingToPass)
-	while action == -1 and state.desperation < 30:
+	while action == -1 and state.desperation <= 30:
 		state.incrementDesperation()
 		action = gropeForDoors(state, observations, state.desperation, permeability=willingToPass)
 	if action != -1:

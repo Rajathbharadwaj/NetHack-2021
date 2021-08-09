@@ -9,8 +9,6 @@ from .logicgrid import identifiables
 from .utilities import *
 from .corpses import *
 
-# TODO: Add a function that tells you what weapon is wielded
-
 def searchInventory(state, observations, desired):
 	# Look in the inventory for an item whose glyph number is one of the ones in desired
 	# If one or more is found, report their inventory slots and which glyph they are
@@ -103,3 +101,20 @@ def isWorthMunching(state, observations, itemID, beatitude):
 		return True
 	else:
 		return False
+
+def whatIsWielded(state, observations):
+	isHallu = readHeroStatus(observations, 9)
+	letters = []
+	types = []
+	indices = []
+	for x in range(len(observations["inv_glyphs"])):
+		if readInventoryItemDesc(observations, x).find("(wielded)") != -1 or readInventoryItemDesc(observations, x).find("(weapon in hand") != -1:
+			# By the way, the missing close paren in "(weapon in hand" is deliberate.
+			# That way, we can hit "(weapon in hand)" and "(weapon in hands)" in one fell swoop
+			letters.append(observations["inv_letters"][x])
+			if isHallu:
+				types.append(identifyLoot(readInventoryItemDesc(observations, x)))
+			else:
+				types.append(observations["inv_glyphs"][x])
+			indices.append(x)
+	return letters, types, indices

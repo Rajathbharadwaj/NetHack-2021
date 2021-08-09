@@ -4,6 +4,7 @@ from .utilities import *
 from .annoyances import * # for the purpose of tracking troubles
 from .narration import CONST_QUIET, CONST_STATUS_UPDATE_PERIOD, CONST_PRINT_MAP_DURING_FLOOR_TRANSITION, CONST_REPORT_KILLS
 from .logicgrid import *
+from .skills import *
 from time import *
 from random import * # spice up narration a bit
 
@@ -35,7 +36,8 @@ class Gamestate(object):
             "quit_game" : False,
             "hp_threshold" : 0, # 1 means agent reached half health, 2 means agent reached quarter health. Resets to 0 when healed to full health.
             "hunger_threshold" : 0, # Tracks hunger severity, we want to print exactly once when we reach Weak status
-            "weight_threshold" : 0, # Tracks encumbrance severity, we want to print exactly once when we reach Burdened status
+            "weight_threshold" : 0, # Tracks encumbrance severity, we want to print exactly once when we reach Burdened status,
+            "transform_threshold" : False, # Tracks transformation, we want to print exactly once when we're transformed
             "status" : [False] * 13 # Tracks each status ailment separately
         }
         self.lastMessage = ""
@@ -52,6 +54,8 @@ class Gamestate(object):
         self.nextSafePrayer = 300
         self.criticalSituation = False
         self.lastKnownLOVE = 1
+        self.role = ""
+        self.setupComplete = False
     
     def reset(self):
         # Before we wipe the slate clean, we should dump core if we haven't already
@@ -84,6 +88,7 @@ class Gamestate(object):
             "hp_threshold" : 0,
             "hunger_threshold" : 0,
             "weight_threshold" : 0,
+            "transform_threshold" : False, # Tracks transformation, we want to print exactly once when we're transformed
             "status" : [False] * 13 # Tracks each status ailment separately
         }
         self.lastMessage = ""
@@ -100,6 +105,8 @@ class Gamestate(object):
         self.nextSafePrayer = 300
         self.criticalSituation = False
         self.lastKnownLOVE = 1
+        self.role = ""
+        self.setupComplete = False
     
     def popFromQueue(self):
         if len(self.queue) == 0:
@@ -143,6 +150,19 @@ class Gamestate(object):
             self.lastKnownLOVE = observations["blstats"][18]
             if not CONST_QUIET:
                 print("Agent's LOVE decreased. (to ",self.lastKnownLOVE,")")
+                
+                
+        if readMessage(observations).find("You feel more confident in your fighting skills.") != -1:
+            self.skills.readyToFight(self,observations)
+                
+        if readMessage(observations).find("You feel more confident in your weapon skills.") != -1:
+            self.skills.readyToWield(self,observations)
+                
+        if readMessage(observations).find("You feel more confident in your spell casting skills.") != -1:
+            self.skills.readyToCast(self,observations)
+                
+        if readMessage(observations).find("You feel you could be more dangerous!") != -1:
+            self.skills.readyToBeDangerous(self,observations)
         message = readMessage(observations)
         if vision == -1:
             for x in range(21):
@@ -301,17 +321,7 @@ class Gamestate(object):
         # print("")
         if self.narrationStatus["quit_game"]:
             # We panicked, so let's show the "searched" table
-            for x in range(21):
-                for y in range(79):
-                    if self.readSearchedMap(x, y) == 0:
-                        print(" ",end="")
-                        continue
-                    if self.readSearchedMap(x, y) <= 60:
-                        print("s",end="")
-                        continue
-                    print("S",end="")
-                print("") # end line of printout
-            print("")
+            self.printSearchMap()
         print("FINAL STATS:")
         timeElapsed = clock_gettime(CLOCK_UPTIME_RAW) - self.episodeStartTime
         stepSpeed = self.stepsTaken / timeElapsed
@@ -340,7 +350,34 @@ class Gamestate(object):
         print(dlvl+1)
         for x in range(len(self.dmap[dlvl])):
             for y in range(len(self.dmap[dlvl][x])):
+                if x == self.lastKnownRow and y == self.lastKnownCol:
+                    print("@",end="")
+                    continue
                 print(self.dmap[dlvl][x][y],end="")
+            print("") # end line of printout
+        print("")
+    def printSearchMap(self):
+        for x in range(21):
+            for y in range(79):
+                if x == self.lastKnownRow and y == self.lastKnownCol:
+                    print("@",end="")
+                    continue
+                if self.readMap(x, y) == "?":
+                    print(" ",end="")
+                    continue
+                if self.readMap(x, y) == "X":
+                    if self.readSearchedMap(x, y) == 0:
+                        print("-",end="")
+                        continue
+                    if self.readSearchedMap(x, y) <= 30:
+                        print("s",end="")
+                        continue
+                    print("S",end="")
+                    continue
+                if isPassable[self.readMap(x, y)]:
+                    print(".",end="")
+                    continue
+                print("0",end="")
             print("") # end line of printout
         print("")
     def eliminate(self, appearance, actual, item_class):
@@ -381,6 +418,9 @@ class Gamestate(object):
             if readInventoryItemDesc(observations, x) == "":
                 self.cache.append(5976)
             self.cache.append(identifyLoot(readInventoryItemDesc(observations, x)))
+    def initializeSkillset(self, observations):
+        self.skills = Skillset(self, observations, self.role)
+        
     
 def makeEmptyMap(depth,default):
     # Returns a 3D array, dimensioned to correspond to the dungeon's squares
@@ -402,7 +442,14 @@ def updateMainMapSquare(previousMarking, observedGlyph, observedChar, heroXDist,
     isNearHero = (heroXDist <= 1 and heroYDist <= 1)
     isLockedOut = (message.find("This door is locked.") != -1)
     isUnlockedNow = (message.find("You succeed in picking the lock.") != -1)
+    if heroXDist == 0 and heroYDist == 0:
+        if previousMarking == "$":
+            return "-"
+        if previousMarking == "&" or previousMarking == "p" or previousMarking == "~" or previousMarking == "F":
+            return "."
+        return previousMarking
     if previousMarking == ">":
+        # TODO: I think it's possible to hallucinate the stairs?
         return previousMarking # Don't overwrite the stairs
     if previousMarking == "s":
         return previousMarking # If shopkeep didn't let you in before they won't let you in now
@@ -419,6 +466,7 @@ def updateMainMapSquare(previousMarking, observedGlyph, observedChar, heroXDist,
                 # Or it's a monster that can walk through walls (in which case it's probably NOT still there)
             # Unfortunately I'm not sure how to tell these two cases apart
             # But fortunately we don't yet often encounter monsters that walk through walls
+            # Wait, can't we just check the glyph ID and see if it walks through walls? That could work
     if observedChar == 62 or message.find("You see here stairs leading down.") != -1: # Stairs (or, maybe, a ladder) leading downward
         return ">"
     if (observedGlyph == 2374 or observedGlyph == 2375): # Door, either horizontal or vertical
@@ -440,8 +488,6 @@ def updateMainMapSquare(previousMarking, observedGlyph, observedChar, heroXDist,
         return "p"
     if observedGlyph == 28: # Floating eye
         return "e"
-    if heroXDist == 0 and heroYDist == 0: # War, the outcast Rider (marked on map mostly for the sake of printing to screen)
-        return "@"
     if observedChar == 94: # Trap
         return "^"
     if observedGlyph >= 1144 and observedGlyph <= 1524 and (previousMarking == "?" or previousMarking == "^"):
@@ -450,7 +496,7 @@ def updateMainMapSquare(previousMarking, observedGlyph, observedChar, heroXDist,
         if previousMarking == "*":
             # Item is embedded in a wall. We generally can't move through walls.
             return "*"
-        if previousMarking != "@" and previousMarking != "-" and previousMarking != "~":
+        if previousMarking != "-" and previousMarking != "~":
             # Ooh, loot! We should take a closer look...
             return "$"
         else:
@@ -463,6 +509,8 @@ def updateMainMapSquare(previousMarking, observedGlyph, observedChar, heroXDist,
             return "~" # Do not try to fight the shopkeeper, he's too tough for a low-level hero like us
     if observedGlyph == 268 or observedGlyph == 270: # Vault guard or Oracle
         return "~" # Again, too tough to realistically fight
+    if (observedGlyph >= 156 and observedGlyph <= 159) or observedGlyph == 55 or observedGlyph == 56 or observedGlyph == 27:
+        return "F" # These monsters can only hurt you if you attack them, so no need to fight unless they're in the way
     if observedGlyph <= 380:
         return "&" # Monster whose type we don't have special procedures for. Roll for initiative or something
     return "." # Anything else we treat as open space

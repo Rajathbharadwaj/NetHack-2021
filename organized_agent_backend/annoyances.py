@@ -26,6 +26,8 @@ def resolveAnnoyances(state, observations):
 		action = pickLocks(state, observations)
 	if action == -1:
 		action = obeyGuard(state, observations)
+	if action == -1:
+		action = bustBoulder(state, observations)
 	return action
 
 def butcherFloatingEyes(state, observations):
@@ -63,7 +65,7 @@ def pickLocks(state, observations):
 	heroRow = readHeroRow(observations)
 	heroCol = readHeroCol(observations)
 	dirs = iterableOverVicinity(observations,True)
-	for x in range(4): # TODO: Go to gamestate.py and handle the TODO labelled "RODNEY"; then, come back and change this to range(8).
+	for x in range(8):
 		if dirs[x] == None:
 			continue # out of bounds
 		row, col, str = dirs[x]
@@ -84,6 +86,31 @@ def obeyGuard(state, observations):
 		print("Surrendering gold to Croesus's minion...")
 	state.queue = [112] # "Drop what?": gold
 	return 33 # drop
+
+def bustBoulder(state,observations):
+	handyPickaxes, types, indices = searchInventory(state, observations, pickaxes)
+	if len(handyPickaxes) == 0:
+		return -1 # No pickaxe, move on with our lives
+	# TODO: Pick the best pickaxe available if we have more than one, right now we just pick whichever comes to hand first
+	bestPickaxe = keyLookup[chr(handyPickaxes[0])]
+	# OK, if we're here we have a pickaxe. But, do we have a boulder we can smash?
+	heroRow = readHeroRow(observations)
+	heroCol = readHeroCol(observations)
+	dirs = iterableOverVicinity(observations,True)
+	for x in range(8):
+		if dirs[x] == None:
+			continue # out of bounds
+		row, col, str = dirs[x]
+		if state.readMap(row,col) == "`":
+			if not CONST_QUIET:
+				print("Digging through boulder in direction ",end="")
+			state.lastDirection = str
+			if not CONST_QUIET:
+				print(str)
+			state.queue = [bestPickaxe, x] # "Apply what?": bestLockpick, "In what direction?": direction
+			return 24 # apply
+	return -1 # No boulder in range.
+	
 
 
 # Now we get into functions that I'll call "troubles".

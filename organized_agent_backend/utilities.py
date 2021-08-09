@@ -14,7 +14,6 @@ isPassable = {
     "#" : False,
     "e" : False,
     "&" : True,
-    "@" : True,
     "~" : False,
     "^" : False,
     "$" : True,
@@ -26,7 +25,8 @@ isPassable = {
     "±" : False,
     "%" : True, # This is a sink, so if you're levitating, avoid!
     "_" : True,
-    "*" : False
+    "*" : False,
+    "F" : True
 }
 
 numericCompass = [
@@ -115,6 +115,62 @@ keyLookup = {
     #"}" : 19, # represents enter ("}" serves no inherent purpose in nethack)
     #"{" : -1, # special character; represents an open slot in the queue
     "$" : 112 # Added to NLE after the fact
+}
+
+slotLookup = {
+    0 : keyLookup["a"],
+    1 : keyLookup["b"],
+    2 : keyLookup["c"],
+    3 : keyLookup["d"],
+    4 : keyLookup["e"],
+    5 : keyLookup["f"],
+    6 : keyLookup["g"],
+    7 : keyLookup["h"],
+    8 : keyLookup["i"],
+    9 : keyLookup["j"],
+    10 : keyLookup["k"],
+    11 : keyLookup["l"],
+    12 : keyLookup["m"],
+    13 : keyLookup["n"],
+    14 : keyLookup["o"],
+    15 : keyLookup["p"],
+    16 : keyLookup["q"],
+    17 : keyLookup["r"],
+    18 : keyLookup["s"],
+    19 : keyLookup["t"],
+    20 : keyLookup["u"],
+    21 : keyLookup["v"],
+    22 : keyLookup["w"],
+    23 : keyLookup["x"],
+    24 : keyLookup["y"],
+    25 : keyLookup["z"],
+    26 : keyLookup["A"],
+    27 : keyLookup["B"],
+    28 : keyLookup["C"],
+    29 : keyLookup["D"],
+    30 : keyLookup["E"],
+    31 : keyLookup["F"],
+    32 : keyLookup["G"],
+    33 : keyLookup["H"],
+    34 : keyLookup["I"],
+    35 : keyLookup["J"],
+    36 : keyLookup["K"],
+    37 : keyLookup["L"],
+    38 : keyLookup["M"],
+    39 : keyLookup["N"],
+    40 : keyLookup["O"],
+    41 : keyLookup["P"],
+    42 : keyLookup["Q"],
+    43 : keyLookup["R"],
+    44 : keyLookup["S"],
+    45 : keyLookup["T"],
+    46 : keyLookup["U"],
+    47 : keyLookup["V"],
+    48 : keyLookup["W"],
+    49 : keyLookup["X"],
+    50 : keyLookup["Y"],
+    51 : keyLookup["Z"]
+    #52 : keyLookup["#"] # does not currently seem to have a key associated with it
 }
 
 def readMessage(observations):
@@ -330,3 +386,29 @@ def isSafeToPray(state, observations):
     # Returns true if it's been long enough since the last prayer that we've got a decent chance of a good outcome
     # TODO: Check other factors which may make it unsafe to pray (god anger, etc)
     return (readTurn(observations) >= state.nextSafePrayer)
+
+def identityCrisis(state, observations):
+    # Returns the <Thing> in "Agent the <Thing>" displayed near the bottom
+    # Useful for discerning our class at the start of the episode, as well as figuring out polymorphing
+    line = observations["tty_chars"][22]
+    line = bytes(line).decode('ascii').replace('\0','')
+    thirdSpace = line.find("  ",10)
+    line = line[10:thirdSpace]
+    return line
+
+classCorrespondence = {
+    "Digger" : "archaeologist",
+    "Plunderer" : "barbarian",
+    "Plunderess" : "barbarian",
+    "Troglodyte" : "caveman",
+    "Rhizotomist" : "healer",
+    "Gallant" : "knight",
+    "Candidate" : "monk",
+    "Aspirant" : "priest",
+    "Tenderfoot" : "ranger",
+    "Footpad" : "rogue",
+    "Hatamoto" : "samurai",
+    "Rambler" : "tourist",
+    "Stripling" : "valkyrie",
+    "Evoker" : "wizard"
+}

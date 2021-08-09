@@ -6,8 +6,9 @@ from .annoyances import resolveAnnoyances
 from .proceed import searchAndProceed, pathfind
 from .obstacles import evaluateObstacles
 from .ranged_combat import fightAtRange
-from .narration import narrateGame, CONST_QUIET
+from .narration import narrateGame, CONST_QUIET, CONST_REPORT_DIET
 from .logicgrid import *
+from .skills import checkSkills
 
 CONST_TREAT_UNKNOWN_AS_PASSABLE = True # I've never yet set this to false but I'm keeping the option right now – you never know
 CONST_MESSAGE_STREAK_THRESHOLD = 200 # Panic if at least this many of the same message appear in a row
@@ -19,6 +20,7 @@ CONST_AGENDA = [] # Array is populated at the end of this file
 def chooseAction(state, observations):
     # This is this file's equivalent of a main method.
     # For organization's sake, it really shouldn't be much more complicated than "call function, see if it returned an action, repeat"
+    setup(state, observations)
     if readHeroStatus(observations, 9): # Hallucination
         state.cacheInventory(observations)
     state.updateMap(observations, vision=CONST_MAX_VISION)
@@ -152,7 +154,7 @@ def routineCheckup(state, observations):
     
     if (state.preyUnderfoot != "") and (readTurn(observations) <= state.corpseMap[readDungeonLevel(observations)][readHeroRow(observations)][readHeroCol(observations)][1]):
         # There's something here worth eating, so let's do that
-        if not CONST_QUIET:
+        if not CONST_QUIET and CONST_REPORT_DIET:
             print("Ate: "+state.preyUnderfoot,end=" ")
             print(state.corpseMap[readDungeonLevel(observations)][readHeroRow(observations)][readHeroCol(observations)])
         state.itemUnderfoot = ""
@@ -200,8 +202,25 @@ def passiveItemIdentification(state, observations):
             continue
         state.identifications[oclass].confirm(types[x],descGlyph)
 
+def setup(state, observations):
+    if state.setupComplete:
+        return -1
+    
+    if state.role == "":
+        state.role = classCorrespondence[identityCrisis(state, observations)]
+        state.initializeSkillset(observations)
+    
+    letters, types, indices = whatIsWielded(state, observations)
+    for x in indices:
+        print(readInventoryItemDesc(observations, x))
+    
+    state.setupComplete = True
+    return -1
 
-CONST_AGENDA = [advancePrompts,
+
+CONST_AGENDA = [
+    advancePrompts,
+    checkSkills,
     evaluateMessageStreak,
     considerDescendingStairs,
     checkForEmergencies,

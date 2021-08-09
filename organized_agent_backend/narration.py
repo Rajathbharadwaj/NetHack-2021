@@ -19,6 +19,7 @@ CONST_STATUS_UPDATE_PERIOD = 1999 # Print the map out every <#> steps
 	# Modular arithmetic for the win!
 CONST_PRINT_MAP_DURING_FLOOR_TRANSITION = False # I mean... this prints the map during floor transition. What else can I say?
 CONST_REPORT_KILLS = False # If true, prints a message whenever the agent directly kills a monster
+CONST_REPORT_DIET = False # If true, prints a message whenever the agent eats a corpse off the floor
 
 statusAfflictionLabels = [
 	"[STONING]", # stoning
@@ -101,6 +102,13 @@ def narrateGame(state, observations):
 		state.narrationStatus["weight_threshold"] = 0 # Reset the alarm to trip again later
 		print("Agent is no longer weighed down.")
 	
+	if observations["blstats"][17] > 0 and not state.narrationStatus["transform_threshold"]:
+		print("Agent is polymorphed into " + identityCrisis(state, observations) + " form!")
+		state.narrationStatus["transform_threshold"] = True
+	if observations["blstats"][17] == 0 and state.narrationStatus["transform_threshold"]:
+		print("Agent has regained its " + identityCrisis(state, observations) + " form.")
+		state.narrationStatus["transform_threshold"] = False
+	
 	if readMessage(observations).find("You feel feverish") != -1:
 		print("Agent is infected with lycanthropy!")
 	
@@ -110,7 +118,7 @@ def narrateGame(state, observations):
 			#print(statusAfflictionMessages[x])
 			print("\"" + readMessage(observations) + "\" " + statusAfflictionLabels[x])
 			if x == 3:
-				#print("Culprit: ", state.corpseMap[readDungeonLevel(observations)][readHeroRow(observations)][readHeroCol(observations)])
+				print("Culprit: ", state.corpseMap[readDungeonLevel(observations)][readHeroRow(observations)][readHeroCol(observations)])
 				print("Current turn: ", readTurn(observations))
 		if (not readHeroStatus(observations, x)) and state.narrationStatus["status"][x]:
 			state.narrationStatus["status"][x] = False
