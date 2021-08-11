@@ -118,3 +118,18 @@ def whatIsWielded(state, observations):
 				types.append(observations["inv_glyphs"][x])
 			indices.append(x)
 	return letters, types, indices
+
+def whatIsWorn(state, observations):
+	isHallu = readHeroStatus(observations, 9)
+	letters = []
+	types = []
+	indices = []
+	for x in range(len(observations["inv_glyphs"])):
+		if readInventoryItemDesc(observations, x).find("(being worn)") != -1:
+			letters.append(observations["inv_letters"][x])
+			if isHallu:
+				types.append(identifyLoot(readInventoryItemDesc(observations, x)))
+			else:
+				types.append(observations["inv_glyphs"][x])
+			indices.append(x)
+	return letters, types, indices

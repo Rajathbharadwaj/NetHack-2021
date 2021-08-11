@@ -27,6 +27,18 @@ pickaxes = [1956, 2140]
 
 worthTaking = lockpicks + blinds + permafood + basicProjectiles + heals + pickaxes
 
+# These we wanna know about to calculate odds of successful spellcasting
+# "Artificial" means the array has artificial glyph IDs
+metallicBoots = [2047]
+metallicArtificialBoots = [10013]
+metallicMails = [2006, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2017, 2018]
+metallicHelms = [1978, 1979, 1983, 1984, 1985, 1986, 1987] # take note – helm of brilliance does *not* count
+metallicArtificialGloves = [10011] # Fortunately, gauntlets of power auto-identify when worn. 
+robes = [2028]
+smallShields = [2035]
+largeShields = [2036, 2037, 2038, 2039, 2040, 2041]
+
+
 # These are two parallel arrays indexing the glyph IDs of every item, and giving their visible name.
 # This way, the agent can look in this table to figure out what's what, when it sees "you see here a <thing>"
 # And I don't have to hard-code it to recognize every single one of the >400 items in the game individually.

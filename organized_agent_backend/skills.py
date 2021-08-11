@@ -41,13 +41,13 @@ skillNames = [
 	"boomerang", # 29
 	"whip", # 30
 	"unicorn horn", # 31
-	"attack magic", # 32
-	"healing magic", # 33
-	"divination magic", # 34
-	"enchantment magic", # 35
-	"clerical magic", # 36
-	"escape magic", # 37
-	"matter magic" # 38
+	"attack", # 32
+	"healing", # 33
+	"divination", # 34
+	"enchantment", # 35
+	"clerical", # 36
+	"escape", # 37
+	"matter" # 38
 ]
 
 weaponGlyphs = [
@@ -318,17 +318,24 @@ class Skillset(object):
 	def readyToWield(self, state, observations):
 		# "You feel more confident in your weapon skills."
 		# Let's figure out which weapon that was.
+		
+		# TODO: Assumption that the wielded weapon is what we improved is not always airtight,
+		# because throwing weapons also trains the corresponding skill.
 		wieldList = whatIsWielded(state, observations)[1]
-		if len(wieldList) != 1:
-			print("FATAL ERROR: Agent is told its weapon skills are ready to enhance, but that shouldn't be possible.")
-			print("Wielded: ",end="")
-			print(wieldList)
-			print("In this situation, the agent should be training its fighting skills, not its weapon skills.")
-			exit(1)
-		wielded = wieldList[0]
+		if state.thingThrown == -1:
+			if len(wieldList) != 1:
+				print("FATAL ERROR: Agent is told its weapon skills are ready to enhance, but that shouldn't be possible.")
+				print("Wielded: ",end="")
+				print(wieldList)
+				print("In this situation, the agent should be training its fighting skills, not its weapon skills.")
+				exit(1)
+			wielded = wieldList[0]
+		else:
+			wielded = state.thingThrown
 		for x in range(len(weaponGlyphs)):
 			weaponClass = weaponGlyphs[x]
 			if wielded in weaponClass:
+				"""
 				if self.readyToImprove[x]:
 					print("FATAL ERROR: Agent is told its weapon skills are ready to enhance, but that shouldn't be possible.")
 					print("Wielded: ",end="")
@@ -337,6 +344,7 @@ class Skillset(object):
 					print(skillNames[x],end="")
 					print(", so it makes no sense...")
 					exit(1)
+				"""
 				print("Agent is nice and practiced with the ",end="")
 				print(skillNames[x],end="")
 				print(".")
@@ -406,6 +414,12 @@ class Skillset(object):
 		print(self.skillLevels[skillID],end="")
 		print(")")
 		exit(1)
+	
+	def levelOfSkill(self, skillName):
+		id = skillNames.index(skillName)
+		return self.skillLevels[id]
+		# If skillName is nonexistent, we get an indexOutOfBounds error.
+		# This is intentional – that way we dump the stack and I get directed right to the function that gave us a bogus name.
 		
 def checkSkills(state, observations):
 	readySkills = []

@@ -9,6 +9,7 @@ from .ranged_combat import fightAtRange
 from .narration import narrateGame, CONST_QUIET, CONST_REPORT_DIET
 from .logicgrid import *
 from .skills import checkSkills
+from .arcanemath import *
 
 CONST_TREAT_UNKNOWN_AS_PASSABLE = True # I've never yet set this to false but I'm keeping the option right now – you never know
 CONST_MESSAGE_STREAK_THRESHOLD = 200 # Panic if at least this many of the same message appear in a row
@@ -31,6 +32,8 @@ def chooseAction(state, observations):
     action = state.popFromQueue()
     if action != -1:
         return action
+    
+    state.thingThrown = -1
     
     # Uncomment this to startscum for a specific item
     """
@@ -106,13 +109,26 @@ def considerDescendingStairs(state, observations):
 
 def checkForEmergencies(state, observations):
     if observations["blstats"][10] * 4 < observations["blstats"][11]:
-        # Hero is at critical HP! Do we have a healing potion?
+        # Hero is at critical HP!
+        # Can we reliably cast a healing spell?
+        if state.considerCasting(observations,"healing",0.95):
+            if not CONST_QUIET:
+                print("A little healing magic should do us some good...")
+            state.queue.append(keyLookup["s"]) # to aim the spell at self
+            return 28 # cast
+        # Do we have a healing potion?
         salvation, healTypes, indices = searchInventoryArtificial(state, observations, heals)
         for x in range(len(salvation)):
             if not CONST_QUIET:
                 print("Drinking that wonderful liquid of salvation!")
             state.queue = [keyLookup[chr(salvation[x])]]
             return 64 # quaff
+        # Can we semi-reliably cast a healing spell?
+        if state.considerCasting(observations,"healing",0.7):
+            if not CONST_QUIET:
+                print("We don't have a healing potion, so hopefully this healing magic works...")
+            state.queue.append(19) # ".", to aim the spell at self
+            return 28 # cast
     if observations["blstats"][21] >= 4 and isSafeToPray(state, observations):
         # Hero is falling over from hunger. Maybe our god can fix it?
         if not CONST_QUIET:
@@ -142,6 +158,23 @@ def routineCheckup(state, observations):
         for x in range(len(comestibles)):
             state.queue = [keyLookup[chr(comestibles[x])]]
             return 35 # eat
+    if observations["blstats"][10] * 2 < observations["blstats"][11]:
+        # Hero is below half HP.
+        # Can we cast a healing spell?
+        if state.considerCasting(observations,"healing",0.75):
+            if not CONST_QUIET:
+                print("Might as well heal...")
+            state.queue.append(keyLookup["s"]) # to aim the spell at self
+            return 28 # cast
+        
+    if observations["blstats"][10] * 3 < observations["blstats"][11]:
+        # Hero is below half HP.
+        # Can we cast a healing spell?
+        if state.considerCasting(observations,"healing",0.55):
+            if not CONST_QUIET:
+                print("Might as well try to heal...")
+            state.queue.append(keyLookup["s"]) # to aim the spell at self
+            return 28 # cast
         
     if state.itemUnderfoot != "":
         # There's something here worth picking up, so let's do that
@@ -210,9 +243,22 @@ def setup(state, observations):
         state.role = classCorrespondence[identityCrisis(state, observations)]
         state.initializeSkillset(observations)
     
-    letters, types, indices = whatIsWielded(state, observations)
+    #letters, types, indices = whatIsWielded(state, observations)
+    #for x in indices:
+        #print(readInventoryItemDesc(observations, x))
+    
+    # Check starting inventory for spellsbooks, then record that we know all those spells
+    # (we can't do starting spells by class because some classes start with one or more randomized spells)
+    
+    indices = searchInventory(state, observations, spellbookAppearances)[2]
     for x in indices:
-        print(readInventoryItemDesc(observations, x))
+        desc = readInventoryItemDesc(observations, x)
+        ofIndex = desc.find(" of ")
+        spell = desc[ofIndex + len(" of "):]
+        state.learnedSpells.append(spell)
+        state.spellExpirations.append(20000)
+        print("Learned spell: \"" + spell + "\"")
+        print("Casting odds:",successfulSpellChance(state, observations, spell))
     
     state.setupComplete = True
     return -1

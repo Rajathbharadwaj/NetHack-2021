@@ -4,6 +4,9 @@
 # TODO TODO TODO TODO TODO
 
 from .spellcasting import *
+from .items import *
+from .inventory import *
+from .utilities import *
 import math
 
 def canDoMagix(state,observations):
@@ -31,26 +34,54 @@ def successfulSpellChance(state, observations, spellName):
 	roleDetails = roleSpellcastingDatabase[state.role]
 	spellDetails = spellDatabase[spellName]
 	
-	# TODO: If above function returns false, 0% chance to work
-	# TODO: If hero is Weak or worse, and spellName is not detect food, 0% chance to work
-	# TODO: If hero is strength 3, and spellName is not restore ability, 0% chance to work
 	# TODO: If we don't know the spell or have forgotten it, 0% chance to work
 	
-	isWearingMetalBoots = False # TODO
-	isWearingMetalHelm = False # TODO
-	isWearingMetalGloves = False # TODO
-	isWearingMetalSuit = False # TODO
-	isWearingRobe = False # TODO
-	isWearingShield = False # TODO
-	isWearingLargeShield = False # TODO
+	if not spellName in state.learnedSpells:
+		# we haven't learned this spell
+		return 0
+	
+	index = state.learnedSpells.index(spellName)
+	if state.spellExpirations[index] < readTurn(observations):
+		# we've forgotten this spell; trying to use it will just get us hit with stunning or confusion
+		# TODO: If we get hit with amnesia, we'll need to figure out what spells we forgot
+		# Trouble is, we'll need to read the 'cast spell' popup window for that, urghhh...
+		return 0
+	
+	if not canDoMagix(state, observations):
+		return 0
+	
+	if observations["blstats"][21] >= 3 and spellName != "detect food":
+		# Hero is too hungry for magix, except detect food
+		return 0
+	
+	if observations["blstats"][CONST_STRENGTH] <= 3 and spellName != "restore ability":
+		# Hero is too weak for magix, except restore ability
+		return 0
+	
+	if observations["blstats"][CONST_CURR_POWER] < 5 * spellDetails["level"]:
+		# Can't pay the energy cost
+		# Note to self: Come back here in a few years when we manage to get the amulet of yendor
+		# cuz we'll need to take its energy drain into account on our way out of the dungeon
+		return 0
+	
+	# And now, basically a line-by-line recreation of the formula used by the game to determine success chance...
+	
+	metalLoadout = checkWornMetal(state, observations)
+	isWearingMetalBoots = metalLoadout[0]
+	isWearingMetalHelm = metalLoadout[1]
+	isWearingMetalGloves = metalLoadout[2]
+	isWearingMetalSuit = metalLoadout[3]
+	isWearingRobe = metalLoadout[4]
+	isWearingSmallShield = metalLoadout[5]
+	isWearingLargeShield = metalLoadout[6]
 	LOVE = state.lastKnownLOVE
 	spellLevel = spellDetails["level"]
-	skill = 0 # TODO
+	skill = state.skills.levelOfSkill(spellDetails["school"])
 	
 	penalty = roleDetails["base_penalty"]
 	if spellDetails["is_emergency"]:
 		penalty += roleDetails["emergency_modifier"]
-	if isWearingShield:
+	if isWearingSmallShield or isWearingLargeShield:
 		penalty += roleDetails["shield_penalty"]
 	if isWearingMetalSuit and not isWearingRobe:
 		penalty += roleDetails["mail_penalty"]
@@ -70,15 +101,15 @@ def successfulSpellChance(state, observations, spellName):
 	if penalty > 20:
 		penalty = 20
 	
-	baseChance = floor(5.5 * observations[roleDetails["stat_used"]])
+	baseChance = math.floor(5.5 * observations["blstats"][roleDetails["stat_used"]])
 	
-	difficulty = 4 * spellLevel - skill * 6 - floor(LOVE / 3) - 5
+	difficulty = 4 * spellLevel - skill * 6 - math.floor(LOVE / 3) - 5
 	
 	chance = baseChance
 	if difficulty > 0:
-		chance -= floor(math.sqrt(900 * difficulty + 2000))
+		chance -= math.floor(math.sqrt(900 * difficulty + 2000))
 	if difficulty < 0:
-		bonus = floor(difficulty * -15 / spellLevel)
+		bonus = math.floor(difficulty * -15 / spellLevel)
 		if bonus > 20:
 			bonus = 20
 		chance += bonus
@@ -89,14 +120,54 @@ def successfulSpellChance(state, observations, spellName):
 	
 	if isWearingLargeShield:
 		if roleDetails["specialty"] == spellName:
-			chance = floor(chance / 2)
+			chance = math.floor(chance / 2)
 		else:
-			chance = floor(chance / 4)
+			chance = math.floor(chance / 4)
 	
-	actualChance = floor(chance * (20 - penalty) / 15 - penalty)
+	actualChance = math.floor(chance * (20 - penalty) / 15 - penalty)
 	if actualChance > 100:
 		actualChance = 100
 	if actualChance < 0:
 		actualChance = 0
 	
-	return actualChance / 100
+	return actualChance / 100 # probability is expressed in decimal (so, 0 to 1, where 0 is 'impossible' and 1 is 'guaranteed')
+
+def checkWornMetal(state, observations):
+	
+	# [0] isWearingMetalBoots
+	# [1] isWearingMetalHelm
+	# [2] isWearingMetalGloves
+	# [3] isWearingMetalSuit
+	# [4] isWearingRobe
+	# [5] isWearingSmallShield
+	# [6] isWearingLargeShield
+	
+	trashcan, types, indices = whatIsWorn(state, observations)
+	metalLoadout = [False] * 7
+	for x in range(len(types)):
+		# Remember that we don't yet support armor identification
+		# Revisit this function when we do, because:
+			# Gauntlets of power and kicking boots are metal, even though their appearances aren't metal
+			# Helms of brilliance are metal, but don't count as metal for spellcasting purposes
+		if types[x] in metallicBoots: 
+			# isWearingMetalBoots
+			metalLoadout[0] = True
+		if types[x] in metallicHelms:
+			# isWearingMetalHelm
+			metalLoadout[1] = True
+		# Check for metallic gloves here at a later date
+		# (the only metallic gloves are gauntlets of power)
+		if types[x] in metallicMails:
+			# isWearingMetalSuit
+			metalLoadout[3] = True
+		if types[x] in robes:
+			# isWearingRobe
+			metalLoadout[4] = True
+		if types[x] in smallShields:
+			# isWearingSmallShield
+			metalLoadout[5] = True
+		if types[x] in largeShields:
+			# isWearingLargeShield
+			metalLoadout[6] = True
+	return metalLoadout
+

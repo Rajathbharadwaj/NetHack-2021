@@ -24,6 +24,7 @@ def throwProjectile(state, observations, row=-1, col=-1, isHypothetical=False):
 	# TODO: Pick the best projectile available if we have more than one, right now we just pick whichever comes to hand first
 	# FIXME: If we don't have a free hand, we get stuck, I think?
 	bestProj = keyLookup[chr(handyProjectiles[0])]
+	bestProjType = types[0]
 	maxRange = miscObjectRange(state, observations)
 	
 	# Projectile armed. Do we have a suitable target?
@@ -45,6 +46,7 @@ def throwProjectile(state, observations, row=-1, col=-1, isHypothetical=False):
 		icon = state.readMap(x,y)
 		if icon == "&" or icon == "e":
 			if not isHypothetical:
+				state.thingThrown = bestProjType
 				state.queue = [bestProj, 0]
 			return 83, row-x
 		if icon == "X" or icon == "+" or icon == "~" or icon == "p":
@@ -59,6 +61,7 @@ def throwProjectile(state, observations, row=-1, col=-1, isHypothetical=False):
 		icon = state.readMap(x,y)
 		if icon == "&" or icon == "e":
 			if not isHypothetical:
+				state.thingThrown = bestProjType
 				state.queue = [bestProj, 4]
 			return 83, row-x
 		if icon == "X" or icon == "+" or icon == "~" or icon == "p":
@@ -75,6 +78,7 @@ def throwProjectile(state, observations, row=-1, col=-1, isHypothetical=False):
 		icon = state.readMap(x,y)
 		if icon == "&" or icon == "e":
 			if not isHypothetical:
+				state.thingThrown = bestProjType
 				state.queue = [bestProj, 1]
 			return 83, y-col
 		if icon == "X" or icon == "+" or icon == "~" or icon == "p":
@@ -89,6 +93,7 @@ def throwProjectile(state, observations, row=-1, col=-1, isHypothetical=False):
 		icon = state.readMap(x,y)
 		if icon == "&" or icon == "e":
 			if not isHypothetical:
+				state.thingThrown = bestProjType
 				state.queue = [bestProj, 5]
 			return 83, x-row
 		if icon == "X" or icon == "+" or icon == "~" or icon == "p":
@@ -104,6 +109,7 @@ def throwProjectile(state, observations, row=-1, col=-1, isHypothetical=False):
 		icon = state.readMap(x,y)
 		if icon == "&" or icon == "e":
 			if not isHypothetical:
+				state.thingThrown = bestProjType
 				state.queue = [bestProj, 2]
 			return 83, x-row
 		if icon == "X" or icon == "+" or icon == "~" or icon == "p":
@@ -118,6 +124,7 @@ def throwProjectile(state, observations, row=-1, col=-1, isHypothetical=False):
 		icon = state.readMap(x,y)
 		if icon == "&" or icon == "e":
 			if not isHypothetical:
+				state.thingThrown = bestProjType
 				state.queue = [bestProj, 6]
 			return 83, x-row
 		if icon == "X" or icon == "+" or icon == "~" or icon == "p":
@@ -133,6 +140,7 @@ def throwProjectile(state, observations, row=-1, col=-1, isHypothetical=False):
 		icon = state.readMap(x,y)
 		if icon == "&" or icon == "e":
 			if not isHypothetical:
+				state.thingThrown = bestProjType
 				state.queue = [bestProj, 3]
 			return 83, col-y
 		if icon == "X" or icon == "+" or icon == "~" or icon == "p":
@@ -148,6 +156,7 @@ def throwProjectile(state, observations, row=-1, col=-1, isHypothetical=False):
 		icon = state.readMap(x,y)
 		if icon == "&" or icon == "e":
 			if not isHypothetical:
+				state.thingThrown = bestProjType
 				state.queue = [bestProj, 7]
 			return 83, row-x
 		if icon == "X" or icon == "+" or icon == "~" or icon == "p":

@@ -5,6 +5,7 @@ from .annoyances import * # for the purpose of tracking troubles
 from .narration import CONST_QUIET, CONST_STATUS_UPDATE_PERIOD, CONST_PRINT_MAP_DURING_FLOOR_TRANSITION, CONST_REPORT_KILLS
 from .logicgrid import *
 from .skills import *
+from .arcanemath import *
 from time import *
 from random import * # spice up narration a bit
 
@@ -56,7 +57,9 @@ class Gamestate(object):
         self.lastKnownLOVE = 1
         self.role = ""
         self.setupComplete = False
-    
+        self.learnedSpells = []
+        self.spellExpirations = []
+        self.thingThrown = -1 # in case our skill in what we threw went up
     def reset(self):
         # Before we wipe the slate clean, we should dump core if we haven't already
         if not CONST_QUIET:
@@ -107,6 +110,9 @@ class Gamestate(object):
         self.lastKnownLOVE = 1
         self.role = ""
         self.setupComplete = False
+        self.learnedSpells = []
+        self.spellExpirations = []
+        self.thingThrown = -1
     
     def popFromQueue(self):
         if len(self.queue) == 0:
@@ -164,7 +170,9 @@ class Gamestate(object):
         if readMessage(observations).find("You feel you could be more dangerous!") != -1:
             self.skills.readyToBeDangerous(self,observations)
         message = readMessage(observations)
-        if vision == -1:
+        if vision == -1 or self.thingThrown == -1:
+            # We need to update the map when we throw something to check what happened
+            # Otherwise we'll throw all our ammo at a monster which died after like 3 hits
             for x in range(21):
                 for y in range(79):
                     heroXDist = abs(row-x)
@@ -420,8 +428,14 @@ class Gamestate(object):
             self.cache.append(identifyLoot(readInventoryItemDesc(observations, x)))
     def initializeSkillset(self, observations):
         self.skills = Skillset(self, observations, self.role)
-        
-    
+    def considerCasting(self, observations, spellName, minimumChance):
+        if not successfulSpellChance(self, observations, spellName) >= minimumChance:
+            return False
+        index = self.learnedSpells.index(spellName)
+        self.queue = [slotLookup[index]]
+        return True
+
+
 def makeEmptyMap(depth,default):
     # Returns a 3D array, dimensioned to correspond to the dungeon's squares
     # Depth is the number of floors you want this map to track
