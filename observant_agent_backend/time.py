@@ -10,15 +10,17 @@ class Stopwatch(StateModule):
 	agenda = []
 	def __init__(self):
 		self.startTime = time.clock_gettime(time.CLOCK_UPTIME_RAW)
-		self.lastKnownTurn = 0
+		self.lastKnownTurn = 1
 	def reset(self):
 		currTime = time.clock_gettime(time.CLOCK_UPTIME_RAW)
 		Hz = self.lastKnownTurn / (currTime - self.startTime)
 		if not CONST_QUIET:
 			print(self.lastKnownTurn,"turns taken at",Hz,"Hz.")
 		self.startTime = currTime
-		self.lastKnownTurn = 0
+		self.lastKnownTurn = 1
 	def dumpCore(self):
 		pass
 	def updateTurns(self, turns):
 		self.lastKnownTurn = turns
+	def incrementTurns(self):
+		self.lastKnownTurn += 1

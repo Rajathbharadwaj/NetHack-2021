@@ -62,9 +62,12 @@ class MonsterTracker(StateModule):
 			if(open == -1):
 				continue
 			close = string.find(">")
+			if string[close+3] == "I":
+				continue # Don't bother trying to name something you can't see
 			desc = string[close+6:]
 			
 			calledIndex = desc.find(" called ")
+			
 			needsName = False
 			if calledIndex == -1:
 				needsName = True
@@ -72,6 +75,8 @@ class MonsterTracker(StateModule):
 				name = desc[calledIndex+len(" called "):]
 				end = name.find(" ")
 				name = name[:end]
+				if name[-1] == ",":
+					name = name[:-1] # snip commas off the end, they're not part of the name
 				if name == "Agent":
 					continue
 				try:
@@ -83,11 +88,14 @@ class MonsterTracker(StateModule):
 			col = int(string[open+1:comma])-1
 			row = int(string[comma+1:close])
 			if needsName:
+				#print("Named:",string)
 				self.toName.append([row,col])
 			else:
 				self.database[nameIndex].updatePos([row,col], turn)
 		return 19 # next page, please
 	def christenNewFaces(self, observations):
+		while len(self.toName) > 0 and self.state.get("map").readSquare(observations,self.toName[0][0],self.toName[0][1]) == 267:
+			self.toName = self.toName[1:] # Don't try to name shopkeepers, it doesn't work
 		if len(self.toName) == 0:
 			return -1 # Naming complete, let's move on
 		self.phase += 1

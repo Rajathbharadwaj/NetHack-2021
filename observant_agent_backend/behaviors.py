@@ -84,7 +84,8 @@ def handleQueue(state, observations):
 def recordingDone(state, observations):
 	state.get("tracker").returnToTop()
 	state.get("map").returnToTop()
-	state.get("time").updateTurns(readTurn(observations))
+	#state.get("time").updateTurns(readTurn(observations))
+	state.get("time").incrementTurns()
 	return -1
 
 def advancePrompts(state, observations):
