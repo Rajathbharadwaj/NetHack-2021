@@ -15,8 +15,6 @@ def chooseAction(state, observations):
 	messages.append(msg)
 	if len(messages) >= 5000:
 		dkafldn = 1
-	if msg == "# ":
-		dkafldn = 1
 	for protocol in agenda:
 		action = protocol(state,observations)
 		if type(action) != int:
@@ -96,9 +94,9 @@ def advancePrompts(state, observations):
 
 agenda = [
 	handleQueue,
-	advancePrompts,
 	scan,
 	checkPath,
+	advancePrompts,
 	recordingDone,
 	proceed
 ]

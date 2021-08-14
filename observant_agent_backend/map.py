@@ -6,6 +6,10 @@ from .pathfind import *
 
 class Gazetteer(StateModule):
 	agenda = []
+	modeAlgorithms = {
+		"std" : forwardWeGo, # Move forward
+		"dsp" : gropeForDoors # Search for secret doors
+	}
 	def __init__(self, state):
 		self.route = []
 		self.movements = []
@@ -14,6 +18,8 @@ class Gazetteer(StateModule):
 		self.lastKnownFloor = 0
 		self.solidStone = chessboard4D()
 		self.boulders = chessboard4D()
+		self.searchMap = chessboard4D(0)
+		self.mode = "std"
 	def reset(self):
 		self.route = []
 		self.movements = []
@@ -21,6 +27,8 @@ class Gazetteer(StateModule):
 		self.lastKnownFloor = 0
 		self.solidStone = chessboard4D()
 		self.boulders = chessboard4D()
+		self.searchMap = chessboard4D(0)
+		self.mode = "std"
 	def dumpCore(self):
 		if self.route == None:
 			print("Agent failed to find a path forward.")
@@ -33,20 +41,25 @@ class Gazetteer(StateModule):
 	def update(self, observations):
 		return self.agenda[self.phase](self,observations)
 	def watchVicinity(self, observations):
+		# Requires #TERRAIN to NOT be active
 		row,col = readHeroPos(observations)
 		dirs = iterableOverVicinity(observations=observations)
 		for x in range(8): 
 			if dirs[x] == None:
 				continue # out of bounds
 			r, c = dirs[x]
+			dlvl = readDungeonLevel(observations)
+			dng = readDungeonNum(observations)
 			if self.readSquare(observations, r, c) == 2353: # boulder
-				dng = readDungeonNum(observations)
-				dlvl = readDungeonLevel(observations)
 				self.boulders[dng][dlvl][r][c] = True
+			else:
+				self.boulders[dng][dlvl][r][c] = False
 		# TODO: Check underfoot
 		self.phase += 1
 		return self.agenda[self.phase](self,observations)
 	def assess(self, observations):
+		if observations["misc"][2]:
+			return -1 # Wait for the dialogue box to be closed
 		heroPos = readHeroPos(observations)
 		if self.route == None:
 			return -1 # We're screwed, panic
@@ -89,7 +102,7 @@ class Gazetteer(StateModule):
 		return 36 # escape (close out terrain view)
 	def newRoute(self, observations):
 		# TODO: Consider other policies
-		self.movements, self.route = pathfindStandard(self, observations, None)
+		self.movements, self.route = self.modeAlgorithms[self.mode](self, observations)
 		if self.route == [] and self.movements == []:
 			self.state.get("queue").append(17) # go down the stairs
 			return 36
@@ -152,11 +165,11 @@ def proceed(state, observations):
 def chessboard4D(filler=False):
 	output = [[filler] * 79]
 	for x in range(20):
-		output.append(output[0])
+		output.append(output[0].copy())
 	output = [output]
 	for x in range(53):
-		output.append(output[0])
+		output.append(output[0].copy())
 	output = [output]
 	for x in range(8):
-		output.append(output[0])
+		output.append(output[0].copy())
 	return output

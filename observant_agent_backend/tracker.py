@@ -30,6 +30,8 @@ class MonsterTracker(StateModule):
 		self.toName = []
 		self.state = state
 	def reset(self):
+		if not CONST_QUIET:
+			print(self.nextOpenName,"names assigned to monsters.")
 		random.shuffle(self.names)
 		self.database = []
 		for x in range(len(self.names)):
@@ -43,7 +45,9 @@ class MonsterTracker(StateModule):
 	def update(self, observations):
 		return self.agenda[self.phase](self,observations)
 	
-	def look(self, observations):
+	def look(self, observations):	
+		if observations["misc"][2]:
+			return -1 # wait for the dialogue box to be dismissed
 		self.phase += 1
 		self.state.get("queue").append(55) # "What do you want to look at?" -> All monsters on map
 		return 93 # whatis

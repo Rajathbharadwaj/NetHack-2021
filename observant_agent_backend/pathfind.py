@@ -78,9 +78,6 @@ def pathfindAStar(gazetteer, observations, target, start=[]):
 # Djistrika's
 # Examine the surrounding spaces until you see a square that looks like it's worth going for
 
-def pathfindStandard(gazetteer, observations, goal):
-	return forwardWeGo(gazetteer, observations)
-
 def forwardWeGo(gazetteer, observations):
 	# GOAL: Find the stairs or unexplored turf
 	# Returns a list of actions and a list of coordinates (in that order)
@@ -138,5 +135,5 @@ def forwardWeGo(gazetteer, observations):
 # Move to the nearest square that we haven't yet searched to exhaustion,
 # with the caveat that squares that aren't adjacent to walls don't qualify
 
-def pathfindDesperate(gazetteer, observations, desperation):
+def gropeForDoors(gazetteer, observations):
 	pass

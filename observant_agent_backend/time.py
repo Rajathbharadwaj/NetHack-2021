@@ -15,7 +15,7 @@ class Stopwatch(StateModule):
 		currTime = time.clock_gettime(time.CLOCK_UPTIME_RAW)
 		Hz = self.lastKnownTurn / (currTime - self.startTime)
 		if not CONST_QUIET:
-			print(self.lastKnownTurn,"turns taken at",Hz," Hz.")
+			print(self.lastKnownTurn,"turns taken at",Hz,"Hz.")
 		self.startTime = currTime
 		self.lastKnownTurn = 0
 	def dumpCore(self):
