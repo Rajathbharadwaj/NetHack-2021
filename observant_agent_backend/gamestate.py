@@ -19,11 +19,13 @@ class Gamestate(object):
 		from .tracker import MonsterTracker
 		from .map import Gazetteer
 		from .time import Stopwatch
+		from .reader import MessageSecretary
 		self.modules = {
 			"queue" : ActionQueue(),
 			"tracker" : MonsterTracker(self),
 			"map" : Gazetteer(self),
-			"time" : Stopwatch()
+			"time" : Stopwatch(self),
+			"reader" : MessageSecretary(self)
 		}
 	def reset(self):
 		for key in self.modules:

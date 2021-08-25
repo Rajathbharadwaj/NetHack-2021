@@ -53,26 +53,27 @@ def pathfindFixUp(gazetteer, observations, prevActions, prevRoute):
 			if dirs[x] == None:
 				continue # out of bounds
 			r, c = dirs[x]
-			try:
-				index = prevRoute.index([r,c])
-			except ValueError:
-				if gazetteer.isMovementPossible(observations,[row,col],[r,c]):
+			if gazetteer.isMovementPossible(observations,[row,col],[r,c]):
+				try:
+					index = prevRoute.index([r,c])
+				except ValueError:
 					if actions[r][c] == None:
 						queue.append([r,c])
 						distance[r][c] = distance[row][col] + 1
 						actions[r][c] = actions[row][col] + [x]
 						route[r][c] = route[row][col] + [[r,c]]
-			else:
-				# Aha, back on track.
-				finalActions = actions[row][col] + [x] + prevActions[index:]
-				finalRoute = route[row][col] + [[row,col]] + prevRoute[index:]
-				return finalActions, finalRoute
+				else:
+					# Aha, back on track.
+					finalActions = actions[row][col] + [x] + prevActions[index:]
+					finalRoute = route[row][col] + [[row,col]] + prevRoute[index:]
+					return finalActions, finalRoute
 	return None, None
 
 # A*
 # Efficiently draw up a route to a specific pair of coordinates using A*
 
 def pathfindAStar(gazetteer, observations, target, start=[]):
+	# TODO
 	pass
 
 # Djistrika's
@@ -99,7 +100,7 @@ def forwardWeGo(gazetteer, observations):
 		distance.append(distance[0].copy())
 	queue = [[heroRow,heroCol]]
 	
-	route[heroRow][heroCol] = []
+	route[heroRow][heroCol] = [[heroRow,heroCol]]
 	actions[heroRow][heroCol] = []
 	
 	while len(queue) > 0:
@@ -117,15 +118,15 @@ def forwardWeGo(gazetteer, observations):
 			if gazetteer.readSquare(observations,r,c) == 2359:
 				# We don't want to route all the way to the unknown square, it could be hazardous
 				# Going to the last known space before the unknown one will reveal it, then we can plan from there
-				return actions[row][col], (route[row][col] + [[row,col]])
+				return actions[row][col], route[row][col]
 			if gazetteer.isMovementPossible(observations,[row,col],[r,c]):
 				if actions[r][c] == None:
 					queue.append([r,c])
 					distance[r][c] = distance[row][col] + 1
 					actions[r][c] = actions[row][col] + [x]
-					route[r][c] = route[row][col] + [[row,col]]
+					route[r][c] = route[row][col] + [[r,c]]
 				if gazetteer.readSquare(observations,r,c) == 2383:
-					return actions[r][c], (route[r][c] + [[r,c]])
+					return actions[r][c], route[r][c]
 	gazetteer.modeSwitch("dsp") # We're out of obvious paths. Time to start searching for secret doors
 	return gropeForDoors(gazetteer, observations)
 	
@@ -157,7 +158,7 @@ def gropeForDoors(gazetteer, observations):
 		distance.append(distance[0].copy())
 	queue = [[heroRow,heroCol]]
 	
-	route[heroRow][heroCol] = []
+	route[heroRow][heroCol] = [[heroRow,heroCol]]
 	actions[heroRow][heroCol] = []
 	
 	bestRouteSoFar = None
@@ -195,35 +196,39 @@ def gropeForDoors(gazetteer, observations):
 			if gazetteer.readSquare(observations,r,c) == 2359:
 				# Ooooooh! Unexplored turf! Let's get going!
 				gazetteer.modeSwitch("std")
-				return actions[row][col], (route[row][col] + [[row,col]])
+				return actions[row][col], route[row][col]
 			if gazetteer.isMovementPossible(observations,[row,col],[r,c]):
 				if actions[r][c] == None:
 					queue.append([r,c])
 					distance[r][c] = distance[row][col] + 1
 					actions[r][c] = actions[row][col] + [x]
-					route[r][c] = route[row][col] + [[row,col]]
+					route[r][c] = route[row][col] + [[r,c]]
 				if gazetteer.readSquare(observations,r,c) == 2383:
 					# Ooooooh! The stairs! Let's get going!
 					gazetteer.modeSwitch("std")
-					return actions[r][c], (route[r][c] + [[r,c]])
+					return actions[r][c], route[r][c]
 	# pick something
-	searchArray = [75] * CONST_SEARCH_DEPTH_BIAS
-	stayInPlaceArray = [bestRouteSoFar[-1]] * CONST_SEARCH_DEPTH_BIAS
+	searchArray = [75] * (CONST_SEARCH_DEPTH_BIAS + 2)
+	stayInPlaceArray = [bestRouteSoFar[-1]] * (CONST_SEARCH_DEPTH_BIAS + 2)
 	return bestActionsSoFar + searchArray, bestRouteSoFar + stayInPlaceArray
 	
 
 def determineSearchCost(gazetteer,observations,row,col):
 	leastExploredWall = None
 	dirs = iterableOverVicinity(x=row,y=col)
+	wallsAround = 0
 	for x in range(8): 
 		if dirs[x] == None:
 			continue # out of bounds
 		r, c = dirs[x]
 		glyph = gazetteer.readSquare(observations,r,c)
 		if glyph >= 2360 and glyph <= 2370:
+			wallsAround += 1
 			wallCost = gazetteer.readSearchMap(r,c,observations)
 			if leastExploredWall == None or wallCost < leastExploredWall:
 				leastExploredWall = wallCost
-	if leastExploredWall != None and gazetteer.isSearchHotspot(observations):
-		leastExploredWall -= 10
+	if leastExploredWall != None:
+		if gazetteer.isSearchHotspot(observations):
+			leastExploredWall -= 10
+		leastExploredWall -= 2 * wallsAround
 	return leastExploredWall

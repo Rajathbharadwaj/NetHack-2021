@@ -4,6 +4,16 @@ from .gamestate import StateModule
 from .utilities import *
 from .pathfind import *
 
+class LogbookEntry(object):
+	def __init__(self):
+		self.tags = []
+		self.search = 0
+	def copy(self):
+		result = LogbookEntry()
+		result.tags = self.tags.copy()
+		result.search = self.search
+		return result
+
 class Gazetteer(StateModule):
 	agenda = []
 	modeAlgorithms = {
@@ -17,20 +27,23 @@ class Gazetteer(StateModule):
 		self.state = state
 		self.phase = 0
 		self.lastKnownFloor = 0
-		self.solidStone = chessboard4D()
-		self.boulders = chessboard4D()
-		self.searchMap = chessboard4D(0)
+		self.map = chessboard4D()
 		self.mode = "std"
+		self.unhandledPokes = []
 		
 	def reset(self):
+		if not CONST_QUIET:
+			print("Reached floor",(self.lastKnownFloor+1),end=".\n")
+			if len(self.unhandledPokes) > 0:
+				print("Unhandled pokes: ",end="")
+				print(self.unhandledPokes)
 		self.route = []
 		self.movements = []
 		self.phase = 0
 		self.lastKnownFloor = 0
-		self.solidStone = chessboard4D()
-		self.boulders = chessboard4D()
-		self.searchMap = chessboard4D(0)
+		self.map = chessboard4D()
 		self.mode = "std"
+		self.unhandledPokes = []
 		
 	def dumpCore(self):
 		modeReported = False
@@ -61,18 +74,16 @@ class Gazetteer(StateModule):
 			if dirs[x] == None:
 				continue # out of bounds
 			r, c = dirs[x]
-			dlvl = readDungeonLevel(observations)
-			dng = readDungeonNum(observations)
 			if self.readSquare(observations, r, c) == 2353: # boulder
-				self.boulders[dng][dlvl][r][c] = True
+				self.addTagObs("boulder", r, c, observations)
 			else:
-				self.boulders[dng][dlvl][r][c] = False
+				self.removeTagObs("boulder", r, c, observations)
 		# TODO: Check underfoot
 		self.phase += 1
 		return self.agenda[self.phase](self,observations)
 	
 	def assess(self, observations):
-		if observations["misc"][2]:
+		if observations["misc"][0] or observations["misc"][1] or observations["misc"][2]:
 			return -1 # Wait for the dialogue box to be closed
 		heroPos = readHeroPos(observations)
 		if self.route == None:
@@ -147,15 +158,26 @@ class Gazetteer(StateModule):
 		if (endGlyph >= 2360 and endGlyph <= 2370) or endGlyph == 2376 or endGlyph == 2377:
 			# terrain is impassible
 			return False
+		
+		monster = self.state.get("tracker").tattle(end[0],end[1])
+		if monster == None:
+			# Monster not detected, or if there is one we didn't recognize it
+			pass 
+		else:
+			if monster.hostility == 0:
+				# Don't attack peacefuls, at least not right now
+				return False
+		
 		isDiagonal = (end[0] != start[0] and end[1] != start[1])
 		if ((endGlyph >= 2372 and endGlyph <= 2375) or (startGlyph >= 2372 and startGlyph <= 2375)) and isDiagonal:
 			# can't move diagonally through doorways
 			return False
-		if endGlyph == 2374 or endGlyph == 2375:
-			return False # FIXME (track locked doors so we can go through unlocked ones)
+		
+		if (endGlyph == 2374 or endGlyph == 2375) and self.hasTagObs("locked", end[0], end[1], observations):
+			return False # Locked door
 		dng = readDungeonNum(observations)
 		dlvl = readDungeonLevel(observations)
-		if self.boulders[dng][dlvl][end[0]][end[1]]:
+		if self.hasTagObs("boulder", end[0], end[1], observations):
 			return False
 		return True
 	
@@ -165,9 +187,10 @@ class Gazetteer(StateModule):
 		dng = readDungeonNum(observations)
 		dlvl = readDungeonLevel(observations)
 		if glyph == 2359 and abs(row - heroRow) <= 1 and abs(col - heroCol) <= 1:
-			self.solidStone[dng][dlvl][row][col] = True
+			self.addTagObs("stone", row, col, observations)
+			return 2360 # It's solid stone, so report it as a wall
 		# TODO: If it's an important dungeon feature, record it
-		if glyph == 2359 and self.solidStone[dng][dlvl][row][col]:
+		if glyph == 2359 and self.hasTagObs("stone", row, col, observations):
 			return 2360 # It's solid stone, so report it as a wall
 		return glyph
 	
@@ -201,11 +224,11 @@ class Gazetteer(StateModule):
 			dungeon = readDungeonNum(observations)
 		if dlvl == -1:
 			dlvl = readDungeonLevel(observations)
-		return self.searchMap[dungeon][dlvl][row][col]
+		return self.getSq(row, col, dungeon, dlvl).search
 	
 	def updateSearchMap(self,observations):
 		dirs = iterableOverVicinity(observations=observations)
-		dng = readDungeonNum(observations)
+		dungeon = readDungeonNum(observations)
 		dlvl = readDungeonLevel(observations)
 		hotspot = self.isSearchHotspot(observations)
 		for x in range(8): 
@@ -213,14 +236,14 @@ class Gazetteer(StateModule):
 				continue # out of bounds
 			r, c = dirs[x]
 			if hotspot:
-				self.searchMap[dng][dlvl][r][c] += .25
+				self.getSq(r, c, dungeon, dlvl).search += .25
 			else:
-				self.searchMap[dng][dlvl][r][c] += 1
+				self.getSq(r, c, dungeon, dlvl).search += 1
 		r, c = readHeroPos(observations)
 		if hotspot:
-			self.searchMap[dng][dlvl][r][c] += .25
+			self.getSq(r, c, dungeon, dlvl).search += .25
 		else:
-			self.searchMap[dng][dlvl][r][c] += 1
+			self.getSq(r, c, dungeon, dlvl).search += 1
 	
 	def modeSwitch(self, newMode, isUrgent=False):
 		self.mode = newMode
@@ -229,6 +252,87 @@ class Gazetteer(StateModule):
 			# (Otherwise, we' finish following the path and then factor in the new mode.)
 			self.movements = []
 			self.route = []
+	
+	def hasTagObs(self, tag, row, col, observations):
+		dungeon = readDungeonNum(observations)
+		dlvl = readDungeonLevel(observations)
+		squareTags = self.getSq(row, col, dungeon, dlvl).tags
+		return (tag in squareTags)
+	
+	def hasTag(self, tag, row, col, dungeon, dlvl):
+		squareTags = self.getSq(row, col, dungeon, dlvl).tags
+		return (tag in squareTags)
+	
+	def addTagObs(self, tag, row, col, observations):
+		dungeon = readDungeonNum(observations)
+		dlvl = readDungeonLevel(observations)
+		squareTags = self.getSq(row, col, dungeon, dlvl).tags
+		if not (tag in squareTags):
+			self.getSq(row, col, dungeon, dlvl).tags.append(tag)
+	
+	def addTag(self, tag, row, col, dungeon, dlvl):
+		squareTags = self.getSq(row, col, dungeon, dlvl).tags
+		if not (tag in squareTags):
+			self.getSq(row, col, dungeon, dlvl).tags.append(tag)
+			
+	def removeTagObs(self, tag, row, col, observations):
+		dungeon = readDungeonNum(observations)
+		dlvl = readDungeonLevel(observations)
+		try:
+			self.getSq(row, col, dungeon, dlvl).tags.remove(tag)
+		except ValueError:
+			pass
+			
+	def removeTag(self, tag, row, col, dungeon, dlvl):
+		try:
+			self.getSq(row, col, dungeon, dlvl).tags.remove(tag)
+		except ValueError:
+			pass
+	
+	def getSq(self, row, col, dungeon, dlvl):
+		# OK so
+		# generating a whole array of 8 branches * 53 floors * 21 rows * 79 squares
+		# takes annoyingly long to do up front,
+		# especially since we don't use most of it, and won't ever use some of it.
+		# (For instance, quest-branch floor 1 isn't a thing.)
+		# So! We're instead gonna make the map on a just-in-time basis.
+		# And making segments of the map just-in-time is this function's job!
+		if self.map[dungeon] == None:
+			self.map[dungeon] = [None] * 53
+			self.map[dungeon][dlvl] = [None] * 21
+			self.map[dungeon][dlvl][row] = [None] * 79
+			self.map[dungeon][dlvl][row][col] = LogbookEntry()
+			return self.map[dungeon][dlvl][row][col]
+		if self.map[dungeon][dlvl] == None:
+			self.map[dungeon][dlvl] = [None] * 21
+			self.map[dungeon][dlvl][row] = [None] * 79
+			self.map[dungeon][dlvl][row][col] = LogbookEntry()
+			return self.map[dungeon][dlvl][row][col]
+		if self.map[dungeon][dlvl][row] == None:
+			self.map[dungeon][dlvl][row] = [None] * 79
+			self.map[dungeon][dlvl][row][col] = LogbookEntry()
+			return self.map[dungeon][dlvl][row][col]
+		if self.map[dungeon][dlvl][row][col] == None:
+			self.map[dungeon][dlvl][row][col] = LogbookEntry()
+		return self.map[dungeon][dlvl][row][col]
+	
+	def poke(self, observations, pokeType):
+		# This function allows me to implement detecting a situation before I implement responding to it.
+		# type is a short string corresponding to some game situation, like seeing the "it's locked" textbox.
+		# If the function doesn't have a response to that string, it'll just hang on to it and report it at game end.
+		
+		# vvv Responses to pokes vvv
+		if pokeType == "locked":
+			if len(self.route) == 0:
+				self.state.dumpCore("The agent wasn't going anywhere. How'd we hit a locked door...?")
+				exit(1)
+			r, c = self.route[0]
+			self.addTagObs("locked", r, c, observations)
+			return
+		# ^^^ Responses to pokes ^^^
+		
+		if not pokeType in self.unhandledPokes:
+			self.unhandledPokes.append(pokeType)
 
 
 def checkPath(state, observations):
@@ -237,14 +341,7 @@ def checkPath(state, observations):
 def proceed(state, observations):
 	return state.get("map").proceed(observations)
 
-def chessboard4D(filler=False):
-	output = [[filler] * 79]
-	for x in range(20):
-		output.append(output[0].copy())
-	output = [output]
-	for x in range(53):
-		output.append(output[0].copy())
-	output = [output]
-	for x in range(8):
-		output.append(output[0].copy())
+def chessboard4D():
+	# See getSq
+	output = [None] * 8
 	return output

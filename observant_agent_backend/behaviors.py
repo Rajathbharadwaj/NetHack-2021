@@ -7,14 +7,13 @@ from .gamestate import StateModule
 from .tracker import scan
 from .map import checkPath, proceed
 from .utilities import *
+from .reader import read
+from .time import countStep
 
 agenda = [] # populated at EOF (so all the functions are defined first)
 messages = []
+stepsSinceLastAction = [0]
 def chooseAction(state, observations):
-	msg = readMessage(observations)
-	messages.append(msg)
-	if len(messages) >= 5000:
-		dkafldn = 1
 	for protocol in agenda:
 		action = protocol(state,observations)
 		if type(action) != int:
@@ -54,8 +53,8 @@ class ActionQueue(StateModule):
 		if len(self.queue) == 0:
 			return
 		if len(self.queue) == 1:
-			print("Agent was just about to perform ",end="")
-			print(self.queue[0],end=".")
+			print("Agent was just about to press ",end="")
+			print(self.queue[0],end=".\n")
 		else:
 			print("Agent had intended to take the following actions: ",end="")
 			print(self.queue)
@@ -75,6 +74,10 @@ class ActionQueue(StateModule):
 		item = self.queue[0]
 		self.queue = self.queue[1:]
 		return item
+	def cutInLine(self,item):
+		# Shove this action to the front of the queue
+		# Useful in emergencies when we can't afford to wait
+		self.queue = [item] + self.queue
 
 def handleQueue(state, observations):
 	# Careful! No observations are recorded until the queue is empty.
@@ -84,19 +87,28 @@ def handleQueue(state, observations):
 def recordingDone(state, observations):
 	state.get("tracker").returnToTop()
 	state.get("map").returnToTop()
-	#state.get("time").updateTurns(readTurn(observations))
-	state.get("time").incrementTurns()
+	state.get("reader").returnToTop()
+	state.get("time").updateTurns(readTurn(observations))
+	#state.get("time").incrementTurns()
+	stepsSinceLastAction[0] = 0
 	return -1
 
 def advancePrompts(state, observations):
-	if observations["misc"][2]:
+	if observations["misc"][0]:
+		return 7 # y/n prompt, just hit y
+	if observations["misc"][1] or observations["misc"][2]:
 		return 19 # Game waiting for enter, so hit enter
 	return -1
 
 agenda = [
+	countStep,
+	read,
 	handleQueue,
 	scan,
 	checkPath,
+	# Check the engraving underfoot, verify whether or not you're standing on an ELBERETH
+	# Fight fight fight fight fight
+	# Fud
 	advancePrompts,
 	recordingDone,
 	proceed
