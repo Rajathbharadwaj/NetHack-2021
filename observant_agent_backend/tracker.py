@@ -69,7 +69,7 @@ class MonsterTracker(StateModule):
 		self.state.get("queue").append(55) # "What do you want to look at?" -> All monsters on map
 		return 93 # whatis
 	def readScreen(self, observations):
-		if parse(observations["tty_chars"][0])[:12] != "All monsters":
+		if parse(observations["tty_chars"][23])[:8] != "--More--":
 			self.phase += 1
 			return self.agenda[self.phase](self,observations)
 		turn = readTurn(observations)

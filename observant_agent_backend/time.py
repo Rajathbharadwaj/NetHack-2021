@@ -34,6 +34,8 @@ class Stopwatch(StateModule):
 		self.stepsThisTurn = 0
 	def nextStep(self,observations):
 		self.stepsThisTurn += 1
+		if self.stepsThisTurn >= 900:
+			x = 1
 		if self.stepsThisTurn >= 1000 and not self.alreadyPanicked:
 			# If *this* many steps happened without any time passing, it's a fair bet we're stuck.
 			# So, rather than get wait to get slaughtered by the 10000 turn rule, let's dump core and quit.
