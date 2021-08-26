@@ -3,6 +3,7 @@
 from .gamestate import StateModule
 from .utilities import *
 from .pathfind import *
+from .combatTactics import *
 
 class LogbookEntry(object):
 	def __init__(self):
@@ -164,8 +165,7 @@ class Gazetteer(StateModule):
 			# Monster not detected, or if there is one we didn't recognize it
 			pass 
 		else:
-			if monster.hostility == 0:
-				# Don't attack peacefuls, at least not right now
+			if not isWorthFighting(self.state, observations, monster):
 				return False
 		
 		isDiagonal = (end[0] != start[0] and end[1] != start[1])

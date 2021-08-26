@@ -21,7 +21,7 @@ class Gamestate(object):
 		from .time import Stopwatch
 		from .reader import MessageSecretary
 		self.modules = {
-			"queue" : ActionQueue(),
+			"queue" : ActionQueue(self),
 			"tracker" : MonsterTracker(self),
 			"map" : Gazetteer(self),
 			"time" : Stopwatch(self),

@@ -24,17 +24,27 @@ class MessageSecretary(StateModule):
 				print("\t"+string+" ("+str(streak)+"x)")
 			else: 
 				print("\t"+string)
-	def figureOutMessage(self,observations):	
+	def figureOutMessage(self,observations):
 		message = readMessage(observations)	
+		
+		if message == "":
+			# no message
+			return -1
+		
+		if message[0] == "#":
+			# agent inputting extended command; not worth logging
+			return -1
+		
+		if message[-29:] == "(For instructions type a '?')":
+			# not worth logging
+			return -1
+		
+		if message[:24] == "What do you want to call":
+			# not worth logging
+			return -1
 		
 		if message.find("This door is locked.") != -1:
 			self.state.get("map").poke(observations, "locked")
-		if self.phase != 0:
-			return -1
-		if message == "":
-			# no message
-			self.phase += 1
-			return -1
 		
 		if message.find("You can't move diagonally into an intact doorway.") != -1:
 			self.state.get("map").poke(observations, "baddoor")
@@ -44,8 +54,6 @@ class MessageSecretary(StateModule):
 		
 		if observations["misc"][2]:
 			message += " --More--"
-		else:
-			self.phase += 1
 		
 		if len(self.log) > 0 and self.log[-1][0] == message:
 			self.log[-1][1] += 1
@@ -54,6 +62,7 @@ class MessageSecretary(StateModule):
 		return -1
 	
 	def returnToTop(self):
+		# Deprecated
 		self.phase = 0
 
 def read(state, observations):

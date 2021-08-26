@@ -9,6 +9,7 @@ from .map import checkPath, proceed
 from .utilities import *
 from .reader import read
 from .time import countStep
+from .combatTactics import meleeCombat
 
 agenda = [] # populated at EOF (so all the functions are defined first)
 messages = []
@@ -45,8 +46,9 @@ def chooseAction(state, observations):
 	return 65 # Quit, then next step, answer yes to "are you sure?"
 
 class ActionQueue(StateModule):
-	def __init__(self):
+	def __init__(self, state):
 		self.queue = []
+		self.state = state
 	def reset(self):
 		self.queue = []
 	def dumpCore(self):
@@ -107,10 +109,11 @@ agenda = [
 	scan,
 	checkPath,
 	# Check the engraving underfoot, verify whether or not you're standing on an ELBERETH
-	# Fight fight fight fight fight
-	# Fud
 	advancePrompts,
 	recordingDone,
+	meleeCombat,
+	# Ranged combat
+	# Fud
 	proceed
 ]
 
