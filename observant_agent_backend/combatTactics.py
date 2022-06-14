@@ -41,5 +41,5 @@ def meleeCombat(state, observations):
 			continue
 		if isWorthFighting(state, observations, monster):
 			state.get("queue").append(direction)
-			return 40
+			return 39 # fight
 	return -1

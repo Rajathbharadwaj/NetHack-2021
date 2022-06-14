@@ -42,7 +42,7 @@ def chooseAction(state, observations):
 		if action != -1:
 			return action
 	state.dumpCore("Agent has panicked! (Its logic gives it no move to make.)",observations)
-	state.get("queue").append(7)
+	state.get("queue").append("y")
 	return 65 # Quit, then next step, answer yes to "are you sure?"
 
 class ActionQueue(StateModule):

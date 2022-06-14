@@ -130,16 +130,16 @@ class Gazetteer(StateModule):
 			return self.agenda[self.phase](self,observations)
 		self.returnToTop()
 		self.phase += 1
-		return 36 # escape (close out terrain view)
+		return 38 # escape (close out terrain view)
 	
 	def newRoute(self, observations):
 		self.movements, self.route = self.modeAlgorithms[self.mode](self, observations)
 		if self.route == [] and self.movements == [] and self.mode == "std":
 			self.state.get("queue").append(17) # go down the stairs
-			return 36
+			return 38 # escape (close out terrain view)
 		self.returnToTop()
 		self.phase += 1
-		return 36 # escape (close out terrain view)
+		return 38 # escape (close out terrain view)
 	
 	agenda = [
 		watchVicinity,

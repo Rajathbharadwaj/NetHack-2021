@@ -67,7 +67,7 @@ class MonsterTracker(StateModule):
 		self.visibleMonsters = {}
 		self.phase += 1
 		self.state.get("queue").append(55) # "What do you want to look at?" -> All monsters on map
-		return 93 # whatis
+		return 101 # whatis
 	def readScreen(self, observations):
 		if parse(observations["tty_chars"][23])[:8] != "--More--":
 			self.phase += 1
@@ -173,7 +173,7 @@ class MonsterTracker(StateModule):
 		if len(self.toName) == 0:
 			return -1 # Naming complete, let's move on
 		self.phase += 1
-		self.state.get("queue").append(54) # "What do you want to name?" -> A monster
+		self.state.get("queue").append("m") # "What do you want to name?" -> A monster
 		return 27
 	def moveCursor(self, observations):
 		cursorPos = readCursorPos(observations)
