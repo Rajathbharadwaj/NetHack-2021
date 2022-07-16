@@ -20,21 +20,21 @@ def chooseAction(state, observations):
 		if type(action) != int:
 			# This is a fatal error, so we print even if CONST_QUIET
 			if action == None:
-				print("Fatal error: Protocol didn't return anything.")
+				print("\x1b[0;31mFatal error: Protocol didn't return anything.")
 				print("Protocol at fault: ",end="")
 				print(protocol)
 				exit(1)
 			if type(action) == tuple:
-				print("Fatal error: Protocol returned a tuple.")
+				print("\x1b[0;31mFatal error: Protocol returned a tuple.")
 				print("Protocol at fault: ",end="")
 				print(protocol)
 				exit(1)
 			if type(action) == list:
-				print("Fatal error: Protocol returned a list.")
+				print("\x1b[0;31mFatal error: Protocol returned a list.")
 				print("Protocol at fault: ",end="")
 				print(protocol)
 				exit(1)
-			print("Fatal error: Protocol returned unexpected type. (",end="")
+			print("\x1b[0;31mFatal error: Protocol returned unexpected type. (",end="")
 			print(type(action),end=")\n")
 			print("Protocol at fault: ",end="")
 			print(protocol)
@@ -106,11 +106,16 @@ agenda = [
 	countStep,
 	read,
 	handleQueue,
+	# Check status conditions
 	scan,
 	checkPath,
 	# Check the engraving underfoot, verify whether or not you're standing on an ELBERETH
+	# ...Actually, maybe check for "closed for inventory" and "ad aerarium" too, come to think of it
 	advancePrompts,
 	recordingDone,
+	# drop your gold if a guard instructs you to; antagonizing a guard tends to be YASD
+	# Consider using escape items if needed
+	# Pray if you're otherwise f'd
 	meleeCombat,
 	# Ranged combat
 	# Fud

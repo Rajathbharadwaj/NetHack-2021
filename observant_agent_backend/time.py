@@ -38,9 +38,9 @@ class Stopwatch(StateModule):
 			x = 1
 		if self.stepsThisTurn >= 1000 and not self.alreadyPanicked:
 			# If *this* many steps happened without any time passing, it's a fair bet we're stuck.
-			# So, rather than get wait to get slaughtered by the 10000 turn rule, let's dump core and quit.
+			# So, rather than wait to get slaughtered by the 10000 step rule, let's dump core and quit.
 			self.state.dumpCore("Agent has panicked! (1000 steps passed planning for one turn.)",observations)
-			self.state.get("queue").cutInLine("y")
+			self.state.get("queue").cutInLine(7)
 			self.state.get("queue").cutInLine(65)
 			self.alreadyPanicked = True
 			return 38 # Escape out of whatever we were doing, quit, and then next step, answer yes to "are you sure?"

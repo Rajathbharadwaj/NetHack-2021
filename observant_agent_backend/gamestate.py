@@ -31,11 +31,12 @@ class Gamestate(object):
 		for key in self.modules:
 			self.modules[key].reset()
 		if not CONST_QUIET:
-			print("----------RIP----------")
+			print("\x1b[0;0;40m----------RIP----------\x1b[0;0;0m")
 	def dumpCore(self,message,observations=None):
 		if CONST_QUIET:
 			return
-		print(message)
+		print("\x1b[0;31m",end="")
+		print(message, end="\n\x1b[0;0m")
 		for key in self.modules:
 			self.modules[key].dumpCore()
 	def get(self,name):

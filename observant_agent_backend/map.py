@@ -31,13 +31,38 @@ class Gazetteer(StateModule):
 		self.map = chessboard4D()
 		self.mode = "std"
 		self.unhandledPokes = []
+		self.steps = 0
+		self.dspSteps = 0
 		
 	def reset(self):
 		if not CONST_QUIET:
-			print("Reached floor",(self.lastKnownFloor+1),end=".\n")
+			if(self.lastKnownFloor+1 >= 10):
+				print("\x1b[0;32mReached floor",(self.lastKnownFloor+1), end=".\x1b[0;0m\n")
+			else:
+				print("Reached floor",(self.lastKnownFloor+1),end=".\n")
+			if self.mode == "std":
+				print("Agent was seeking the way forward.")
+			if self.mode == "dsp":
+				print("Agent was on the hunt for secret paths.")
+			if self.mode not in self.modeAlgorithms:
+				print("\x1b[0;31mAgent was having a seizure (invalid path mode).\x1b[0;0m")
+			if self.route == None:
+				print("\x1b[0;31mAgent's pathfinding failed miserably.\x1b[0;0m")
+				return
+			if len(self.route) > 0:
+				print("Agent was on a",len(self.route),"step path to ",end="")
+				print(self.route[-1],end=".\n")
+			if self.steps > 0:
+				ratio = self.dspSteps / self.steps
+				if(ratio >= 0.7):
+					print("\x1b[0;33mDesperation ratio: ", end="")
+					print(ratio, end=".\x1b[0;0m\n")
+				else:
+					print("Desperation ratio: ", end="")
+					print(ratio, end=".\n")
 			if len(self.unhandledPokes) > 0:
-				print("Unhandled pokes: ",end="")
-				print(self.unhandledPokes)
+				print("\x1b[0;33mUnhandled pokes: ",end="")
+				print(self.unhandledPokes,"\x1b[0;0m")
 		self.route = []
 		self.movements = []
 		self.phase = 0
@@ -45,6 +70,8 @@ class Gazetteer(StateModule):
 		self.map = chessboard4D()
 		self.mode = "std"
 		self.unhandledPokes = []
+		self.steps = 0
+		self.dspSteps = 0
 		
 	def dumpCore(self):
 		modeReported = False
@@ -200,6 +227,9 @@ class Gazetteer(StateModule):
 		nextMovement = self.movements[0]
 		self.route = self.route[1:]
 		self.movements = self.movements[1:]
+		self.steps += 1
+		if self.mode == "dsp":
+			self.dspSteps += 1
 		if nextMovement == 75: # search
 			self.updateSearchMap(observations)
 		return nextMovement

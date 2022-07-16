@@ -229,6 +229,6 @@ def determineSearchCost(gazetteer,observations,row,col):
 				leastExploredWall = wallCost
 	if leastExploredWall != None:
 		if gazetteer.isSearchHotspot(observations):
-			leastExploredWall -= 10
-		leastExploredWall -= 2 * wallsAround
+			leastExploredWall -= CONST_SEARCH_HOTSPOT_BIAS
+		leastExploredWall -= CONST_SEARCH_MULTIWALL_BIAS * wallsAround
 	return leastExploredWall

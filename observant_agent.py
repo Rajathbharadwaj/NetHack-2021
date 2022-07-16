@@ -30,3 +30,7 @@ class ObservantAgent(BatchedAgent):
                 self.state[x].reset()
             actions.append(chooseAction(self.state[x], observations[x]))
         return actions
+    
+    def reset(self):
+        for x in range(self.num_envs):
+            self.state[x].reset()

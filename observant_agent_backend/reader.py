@@ -14,7 +14,12 @@ class MessageSecretary(StateModule):
 			if len(self.log) == 0:
 				print("Fate unclear. (No messages)")
 			else:
-				print("Fate: " + self.log[-1][0])
+				print("Recent messages:")
+				for string, streak in self.log[-3:]:
+					if streak > 1:
+						print("\t"+string+" ("+str(streak)+"x)")
+					else: 
+						print("\t"+string)
 		self.log = []
 		self.phase = 0
 	def dumpCore(self):
