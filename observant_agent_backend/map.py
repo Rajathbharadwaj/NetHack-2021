@@ -205,7 +205,11 @@ class Gazetteer(StateModule):
 		dng = readDungeonNum(observations)
 		dlvl = readDungeonLevel(observations)
 		if self.hasTagObs("boulder", end[0], end[1], observations):
-			return False
+			label = "badboulder " + str(start[0]) + " " + str(start[1])
+			if self.hasTagObs(label, end[0], end[1], observations):
+				return False
+			return True
+			# return False
 		return True
 	
 	def readSquare(self, observations, row, col):
@@ -358,6 +362,16 @@ class Gazetteer(StateModule):
 				exit(1)
 			r, c = self.route[0]
 			self.addTagObs("locked", r, c, observations)
+			return
+		
+		if pokeType == "badboulder" or pokeType == "blockedboulder":
+			if len(self.route) == 0:
+				self.state.dumpCore("The agent wasn't going anywhere. How'd we hit a boulder...?")
+				exit(1)
+			r, c = self.route[0]
+			xpos, ypos = readHeroPos(observations)
+			label = "badboulder " + str(xpos) + " " + str(ypos)
+			self.addTagObs(label, r, c, observations)
 			return
 		# ^^^ Responses to pokes ^^^
 		

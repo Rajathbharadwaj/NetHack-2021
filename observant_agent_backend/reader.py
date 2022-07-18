@@ -57,6 +57,12 @@ class MessageSecretary(StateModule):
 		if message.find("You are carrying too much to get through.") != -1:
 			self.state.get("map").poke(observations, "baddiag")
 		
+		if message.find("You try to move the boulder, but in vain.") != -1:
+			self.state.get("map").poke(observations, "badboulder")
+		
+		if message.find("You hear a monster behind the boulder.") != -1:
+			self.state.get("map").poke(observations, "blockedboulder")
+		
 		if observations["misc"][2]:
 			message += " --More--"
 		
