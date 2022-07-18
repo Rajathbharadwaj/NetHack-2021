@@ -33,6 +33,7 @@ class Gazetteer(StateModule):
 		self.unhandledPokes = []
 		self.steps = 0
 		self.dspSteps = 0
+		self.isEncumbered = False # TODO: Move to status tracker or inventory tracker once either of those exist
 		
 	def reset(self):
 		if not CONST_QUIET:
@@ -72,6 +73,7 @@ class Gazetteer(StateModule):
 		self.unhandledPokes = []
 		self.steps = 0
 		self.dspSteps = 0
+		self.isEncumbered = False # TODO: Move to status tracker or inventory tracker once either of those exist
 		
 	def dumpCore(self):
 		modeReported = False
@@ -183,9 +185,20 @@ class Gazetteer(StateModule):
 			return False
 		startGlyph = self.readSquare(observations, start[0], start[1])
 		endGlyph = self.readSquare(observations, end[0], end[1])
+		isMovementDiagonal = (start[0] != end[0] and start[0] != end[0])
 		if (endGlyph >= 2360 and endGlyph <= 2370) or endGlyph == 2376 or endGlyph == 2377:
 			# terrain is impassible
 			return False
+		
+		if isMovementDiagonal and self.isEncumbered:
+			diagSq1 = self.readSquare(observations, start[0], end[1])
+			diagSq2 = self.readSquare(observations, end[0], start[1])
+			
+			if (diagSq1 >= 2360 and diagSq1 <= 2370) or diagSq1 == 2376 or diagSq1 == 2377:
+				if (diagSq2 >= 2360 and diagSq2 <= 2370) or diagSq2 == 2376 or diagSq2 == 2377:
+					# too tight a squeeze
+					return False
+			
 		
 		monster = self.state.get("tracker").tattle(end[0],end[1])
 		if monster == None:
@@ -195,8 +208,7 @@ class Gazetteer(StateModule):
 			if not isWorthFighting(self.state, observations, monster):
 				return False
 		
-		isDiagonal = (end[0] != start[0] and end[1] != start[1])
-		if ((endGlyph >= 2372 and endGlyph <= 2375) or (startGlyph >= 2372 and startGlyph <= 2375)) and isDiagonal:
+		if ((endGlyph >= 2372 and endGlyph <= 2375) or (startGlyph >= 2372 and startGlyph <= 2375)) and isMovementDiagonal:
 			# can't move diagonally through doorways
 			return False
 		
@@ -373,6 +385,11 @@ class Gazetteer(StateModule):
 			label = "badboulder " + str(xpos) + " " + str(ypos)
 			self.addTagObs(label, r, c, observations)
 			return
+		
+		if pokeType == "baddiag":
+			self.isEncumbered = True
+			return
+		
 		# ^^^ Responses to pokes ^^^
 		
 		if not pokeType in self.unhandledPokes:
