@@ -93,7 +93,7 @@ monsterNames = [
 	"NU",
 	"XI",
 	"OMICRON",
-	"PI",
+	# "PI", # incompatible with "PICO"
 	"RHO",
 	"SIGMA",
 	"TAU",

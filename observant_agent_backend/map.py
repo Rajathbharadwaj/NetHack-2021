@@ -18,8 +18,10 @@ class LogbookEntry(object):
 class Gazetteer(StateModule):
 	agenda = []
 	modeAlgorithms = {
+		# "grd" : greedIsGood # check around for items that may be worth checking out (TODO)
 		"std" : forwardWeGo, # Move forward
 		"dsp" : gropeForDoors # Search for secret doors
+		# "scw" : screwIt # use a pickaxe or something to proceed by brute force
 	}
 	
 	def __init__(self, state):

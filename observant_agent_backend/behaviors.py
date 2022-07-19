@@ -10,7 +10,7 @@ from .utilities import *
 from .reader import read
 from .time import countStep
 from .combatTactics import meleeCombat
-from .doctor import checkup
+from .doctor import checkup, fixMinorProblems, fixUrgentProblems
 
 agenda = [] # populated at EOF (so all the functions are defined first)
 messages = []
@@ -114,12 +114,13 @@ agenda = [
 	# ...Actually, maybe check for "closed for inventory" and "ad aerarium" too, come to think of it
 	advancePrompts,
 	recordingDone,
+	fixUrgentProblems,
 	# drop your gold if a guard instructs you to; antagonizing a guard tends to be YASD
 	# Consider using escape items if needed
 	# Pray if you're otherwise f'd
 	meleeCombat,
 	# Ranged combat
-	# Fud
+	fixMinorProblems,
 	proceed
 ]
 

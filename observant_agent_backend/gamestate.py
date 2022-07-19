@@ -6,6 +6,9 @@ from abc import ABC, abstractmethod
 from .agent_config import *
 
 class StateModule(ABC):
+	# TODO - We probably should separate "print the obituary" and "reset yourself" into different functions
+			# because some parts of the obituary require collaboration between modules
+			# so ideally we'd want to print everything before resetting anything
 	@abstractmethod
 	def reset(self):
 		pass
@@ -21,13 +24,15 @@ class Gamestate(object):
 		from .time import Stopwatch
 		from .reader import MessageSecretary
 		from .doctor import StatusChecker
+		from .inventory import ItemManager
 		self.modules = {
 			"time" : Stopwatch(self),
 			"queue" : ActionQueue(self),
 			"reader" : MessageSecretary(self),
 			"tracker" : MonsterTracker(self),
 			"map" : Gazetteer(self),
-			"doctor" : StatusChecker(self)
+			"doctor" : StatusChecker(self),
+			"inventory" : ItemManager(self)
 		}
 	def reset(self):
 		for key in self.modules:

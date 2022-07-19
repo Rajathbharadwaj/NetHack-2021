@@ -85,7 +85,7 @@ keyLookup = {
 
 def parse(str):
 	# The observations give us text in the form of ascii numbers
-	# This turns those ascii numbers 
+	# This turns those ascii numbers into something we can actually read
 	return bytes(str).decode('ascii').replace('\0','')
 
 def readHeroPos(observations):
@@ -237,3 +237,7 @@ def readHeroStatus(observations, statusToCheck):
 		bool(observations["blstats"][nethack.NLE_BL_CONDITION] & nethack.BL_MASK_RIDE)
 	]
 	return status[statusToCheck]
+
+def readInventoryGlyph(state, observations, index):
+	# TODO: Account for hallucination
+	return observations["inv_glyphs"][index]

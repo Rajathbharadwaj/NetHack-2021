@@ -26,7 +26,7 @@ class MessageSecretary(StateModule):
 	def dumpCore(self):
 		print("Recent messages:")
 		for string, streak in self.log[-10:]:
-			alteredString = state.get("tracker").annotate(string)
+			alteredString = self.state.get("tracker").annotate(string)
 			if streak > 1:
 				print("\t"+alteredString+" ("+str(streak)+"x)")
 			else: 

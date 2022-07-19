@@ -4,11 +4,16 @@ from .gamestate import StateModule
 from .agent_config import *
 from .utilities import *
 
+# "Permafood" = food that doesn't have an expiration date (and that we can't really use for any other purpose)
+permafood = [1299, 2148, 2149, 2150, 2151, 2158, 2159, 2160, 2161, 2162, 2163, 2166, 2168, 2170, 2172, 2173, 2174, 2175, 2176] # TODO: Add 2177 (tin)
+
 class StatusChecker(StateModule):
 	def __init__(self, state):
 		self.currentAilments = []
 		self.lastKnownStatus = 0
 		self.lastKnownHunger = 0
+		self.lastKnownEncumbrance = 0
+		self.state = state
 	def reset(self): 
 		if not CONST_QUIET:
 			status = self.reportStatus()
@@ -17,6 +22,7 @@ class StatusChecker(StateModule):
 		self.currentAilments = []
 		self.lastKnownStatus = 0
 		self.lastKnownHunger = 0
+		self.lastKnownEncumbrance = 0
 	def dumpCore(self):
 		status = self.reportStatus()
 		if not len(status) == 0:
@@ -24,6 +30,7 @@ class StatusChecker(StateModule):
 	def recordStatus(self, observations):
 		self.lastKnownStatus = observations["blstats"][nethack.NLE_BL_CONDITION]
 		self.lastKnownHunger = observations["blstats"][nethack.NLE_BL_HUNGER]
+		self.lastKnownEncumbrance = observations["blstats"][nethack.NLE_BL_CAP]
 		return -1
 	def logAilment(self, ailment):
 		if(not ailment in self.currentAilments):
@@ -66,7 +73,43 @@ class StatusChecker(StateModule):
 			result.append("Severe Hunger")
 		if self.lastKnownHunger >= 4:
 			result.append("Starvation")
+		if self.lastKnownEncumbrance == 1:
+			result.append("Burden")
+		if self.lastKnownEncumbrance == 2:
+			result.append("Stress")
+		if self.lastKnownEncumbrance == 3:
+			result.append("Strain")
+		if self.lastKnownEncumbrance >= 4:
+			result.append("Overtaxing")
+		if self.lastKnownEncumbrance >= 5:
+			result.append("Overloading")
 		return result
+	def fixUrgentProblems(self, observations):
+		# An urgent problem is defined as one which can't wait a few turns
+		# for you to kill a monster first. It might be something that
+		# inhibits your ability to fight, or something that will probably
+		# kill you by the time you're done.
+		
+		# Other problems go in fixMinorProblems above.
+		if self.lastKnownHunger >= 3 and self.lastKnownEncumbrance < 4:
+			letters, types, indices = self.state.get("inventory").reachForItem(observations, permafood)
+			if(len(letters) > 0):
+				self.state.get("queue").append(letters[0])
+				return 35 # eat
+		return -1
+	def fixMinorProblems(self, observations):
+		if self.lastKnownHunger >= 2 and self.lastKnownEncumbrance < 4:
+			letters, types, indices = self.state.get("inventory").reachForItem(observations, permafood)
+			if(len(letters) > 0):
+				self.state.get("queue").append(parse([letters[0]]))
+				return 35 # eat
+		return -1
 
 def checkup(state, observations):
 	return state.get("doctor").recordStatus(observations)
+
+def fixMinorProblems(state, observations):
+	return state.get("doctor").fixMinorProblems(observations)
+
+def fixUrgentProblems(state, observations):
+	return state.get("doctor").fixUrgentProblems(observations)
