@@ -10,6 +10,7 @@ from .utilities import *
 from .reader import read
 from .time import countStep
 from .combatTactics import meleeCombat
+from .doctor import checkup
 
 agenda = [] # populated at EOF (so all the functions are defined first)
 messages = []
@@ -106,7 +107,7 @@ agenda = [
 	countStep,
 	read,
 	handleQueue,
-	# Check status conditions
+	checkup,
 	scan,
 	checkPath,
 	# Check the engraving underfoot, verify whether or not you're standing on an ELBERETH

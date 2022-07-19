@@ -3,6 +3,7 @@
 # observant_agent
 
 from .agent_config import *
+from nle import nethack
 
 keyLookup = {
 	"a" : 24,
@@ -201,3 +202,38 @@ def iterableOverVicinity(observations = [], returnDirections = False, x = -1, y 
 		output.append(None)
 	
 	return output
+
+def readHeroStatus(observations, statusToCheck):
+	# Checks if the hero is afflicted with a specific status condition, indicated by number
+	# Options are:
+		# (0) Petrification
+		# (1) Degeneration into slime
+		# (2) Strangulation
+		# (3) Food poisoning
+		# (4) Disease
+		# (5) Blindness
+		# (6) Deafness
+		# (7) Stunning
+		# (8) Confusion
+		# (9) Hallucination
+		# (10) Levitation
+		# (11) Flight
+		# (12) Riding
+	status = [
+		bool(observations["blstats"][nethack.NLE_BL_CONDITION] & nethack.BL_MASK_STONE),
+		bool(observations["blstats"][nethack.NLE_BL_CONDITION] & nethack.BL_MASK_SLIME),
+		
+		bool(observations["blstats"][nethack.NLE_BL_CONDITION] & nethack.BL_MASK_STRNGL),
+		bool(observations["blstats"][nethack.NLE_BL_CONDITION] & nethack.BL_MASK_FOODPOIS),
+		bool(observations["blstats"][nethack.NLE_BL_CONDITION] & nethack.BL_MASK_TERMILL),
+		
+		bool(observations["blstats"][nethack.NLE_BL_CONDITION] & nethack.BL_MASK_BLIND),
+		bool(observations["blstats"][nethack.NLE_BL_CONDITION] & nethack.BL_MASK_DEAF),
+		bool(observations["blstats"][nethack.NLE_BL_CONDITION] & nethack.BL_MASK_STUN),
+		bool(observations["blstats"][nethack.NLE_BL_CONDITION] & nethack.BL_MASK_CONF),
+		bool(observations["blstats"][nethack.NLE_BL_CONDITION] & nethack.BL_MASK_HALLU),
+		bool(observations["blstats"][nethack.NLE_BL_CONDITION] & nethack.BL_MASK_LEV),
+		bool(observations["blstats"][nethack.NLE_BL_CONDITION] & nethack.BL_MASK_FLY),
+		bool(observations["blstats"][nethack.NLE_BL_CONDITION] & nethack.BL_MASK_RIDE)
+	]
+	return status[statusToCheck]

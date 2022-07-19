@@ -20,11 +20,13 @@ class Gamestate(object):
 		from .map import Gazetteer
 		from .time import Stopwatch
 		from .reader import MessageSecretary
+		from .doctor import StatusChecker
 		self.modules = {
+			"time" : Stopwatch(self),
 			"queue" : ActionQueue(self),
 			"tracker" : MonsterTracker(self),
 			"map" : Gazetteer(self),
-			"time" : Stopwatch(self),
+			"doctor" : StatusChecker(self),
 			"reader" : MessageSecretary(self)
 		}
 	def reset(self):
