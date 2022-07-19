@@ -24,10 +24,10 @@ class Gamestate(object):
 		self.modules = {
 			"time" : Stopwatch(self),
 			"queue" : ActionQueue(self),
+			"reader" : MessageSecretary(self),
 			"tracker" : MonsterTracker(self),
 			"map" : Gazetteer(self),
-			"doctor" : StatusChecker(self),
-			"reader" : MessageSecretary(self)
+			"doctor" : StatusChecker(self)
 		}
 	def reset(self):
 		for key in self.modules:

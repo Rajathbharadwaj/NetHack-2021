@@ -16,19 +16,21 @@ class MessageSecretary(StateModule):
 			else:
 				print("Recent messages:")
 				for string, streak in self.log[-3:]:
+					alteredString = self.state.get("tracker").annotate(string)
 					if streak > 1:
-						print("\t"+string+" ("+str(streak)+"x)")
+						print("\t"+alteredString+" \x1b[0;33m("+str(streak)+"x)\x1b[0;0m")
 					else: 
-						print("\t"+string)
+						print("\t"+alteredString)
 		self.log = []
 		self.phase = 0
 	def dumpCore(self):
 		print("Recent messages:")
 		for string, streak in self.log[-10:]:
+			alteredString = state.get("tracker").annotate(string)
 			if streak > 1:
-				print("\t"+string+" ("+str(streak)+"x)")
+				print("\t"+alteredString+" ("+str(streak)+"x)")
 			else: 
-				print("\t"+string)
+				print("\t"+alteredString)
 	def figureOutMessage(self,observations):
 		message = readMessage(observations)	
 		

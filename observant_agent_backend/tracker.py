@@ -4,6 +4,7 @@ from .names import monsterNames, reservedNames
 from .gamestate import StateModule
 from .utilities import *
 import random
+from nle import nethack as nh
 
 class LogbookEntry(object):
 	def __init__(self):
@@ -231,6 +232,21 @@ class MonsterTracker(StateModule):
 			return None
 		else:
 			return mon
+		
+	def annotate(self, string):
+		# Takes a string, such as a message, and annotates it with monster types of monster names
+		# So, if ANNI is a giant ant, ANNI would be replaced by ANNI (giant ant)
+		result = string
+		for x in range(self.nextOpenName):
+			name = self.names[x]
+			pos = result.find(name)
+			if pos == -1:
+				continue
+			insertionPoint = pos + len(name)
+			mon = self.database[x].glyph
+			desc = f' \x1b[0;36m({nh.permonst(nh.glyph_to_mon(mon)).mname})\x1b[0;0m'
+			result = result[:insertionPoint] + desc + result[insertionPoint:]
+		return result
 
 def scan(state,observations):
 	action = state.get("tracker").update(observations)
