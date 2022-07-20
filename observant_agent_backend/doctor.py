@@ -94,7 +94,7 @@ class StatusChecker(StateModule):
 		if self.lastKnownHunger >= 3 and self.lastKnownEncumbrance < 4:
 			letters, types, indices = self.state.get("inventory").reachForItem(observations, permafood)
 			if(len(letters) > 0):
-				self.state.get("queue").append(letters[0])
+				self.state.get("queue").append(parse([letters[0]]))
 				return 35 # eat
 		return -1
 	def fixMinorProblems(self, observations):

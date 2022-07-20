@@ -564,5 +564,6 @@ reservedNames = [
 	"Lucrezia",
 	"Dirk",
 	"Elan Lapinski",
-	"Izchak"
+	"Izchak",
+	"The Oracle"
 ]

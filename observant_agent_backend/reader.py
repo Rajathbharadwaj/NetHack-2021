@@ -14,6 +14,12 @@ class MessageSecretary(StateModule):
 			if len(self.log) == 0:
 				print("Fate unclear. (No messages)")
 			else:
+				firstMsg = self.log[0][0]
+				identityPos = firstMsg.find("You are a ")
+				if identityPos == -1:
+					print("Too bad – agent's identity was obscured.")
+				else:
+					print("Agent was a",firstMsg[identityPos+len("You are a "):])
 				print("Recent messages:")
 				for string, streak in self.log[-3:]:
 					alteredString = self.state.get("tracker").annotate(string)
@@ -28,7 +34,7 @@ class MessageSecretary(StateModule):
 		for string, streak in self.log[-10:]:
 			alteredString = self.state.get("tracker").annotate(string)
 			if streak > 1:
-				print("\t"+alteredString+" ("+str(streak)+"x)")
+				print("\t"+alteredString+" [0;33m("+str(streak)+"x)\x1b[0;0m")
 			else: 
 				print("\t"+alteredString)
 	def figureOutMessage(self,observations):

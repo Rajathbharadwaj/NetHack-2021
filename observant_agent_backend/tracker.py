@@ -140,7 +140,10 @@ class MonsterTracker(StateModule):
 				# so it had BETTER exist in our names somewhere already...
 				nameIndex = self.lookup[name]
 				needsName = False
-				
+			if observations["glyphs"][row][col] == 270:
+				# We can't name The Oracle, but there's only one, so that's okay.
+				nameIndex = self.lookup["The Oracle"]
+				needsName = False
 			
 			tameIndex = desc.find("tame")
 			peaceIndex = desc.find("peaceful")
