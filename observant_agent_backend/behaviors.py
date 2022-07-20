@@ -71,11 +71,25 @@ class ActionQueue(StateModule):
 					self.queue.append(keyLookup[x])
 			else:
 				self.queue.append(item)
-	def pop(self):
+	def pop(self, observations):
 		if len(self.queue) == 0:
 			return -1
 		item = self.queue[0]
 		self.queue = self.queue[1:]
+		if isinstance(item, bool):
+			# Bools in the queue signify the following:
+			# "There may or may not be a y/n question at this point.
+			# If there is, respond with {y/n}. Otherwise, just proceed."
+			# True indicates "respond with y", and false indicates "respond with n".
+			msg = readMessage(observations)
+			if msg.find("[yn") != -1:
+				if item == True:
+					return 7 # y
+				else:
+					return 5 # n
+			else:
+				# no y/n question detected; proceed to next element in queue
+				return self.pop(observations)
 		return item
 	def cutInLine(self,item):
 		# Shove this action to the front of the queue
@@ -85,7 +99,7 @@ class ActionQueue(StateModule):
 def handleQueue(state, observations):
 	# Careful! No observations are recorded until the queue is empty.
 	# If that causes problems for you, don't use the queue.
-	return state.get("queue").pop()
+	return state.get("queue").pop(observations)
 
 def recordingDone(state, observations):
 	state.get("tracker").returnToTop()

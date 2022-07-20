@@ -198,7 +198,7 @@ monsterNames = [
 	"SCREWBALL",
 	"FLAMEBAIT",
 	"SOCKPUPPET",
-	"PANIC",
+	# "PANIC", # retired so it doesn't screw up me searching for actual panics
 	"STUPIDITY",
 	"DENIAL",
 	"ANGER",

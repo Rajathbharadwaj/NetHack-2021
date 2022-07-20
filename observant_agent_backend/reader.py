@@ -34,7 +34,7 @@ class MessageSecretary(StateModule):
 		for string, streak in self.log[-10:]:
 			alteredString = self.state.get("tracker").annotate(string)
 			if streak > 1:
-				print("\t"+alteredString+" [0;33m("+str(streak)+"x)\x1b[0;0m")
+				print("\t"+alteredString+" \x1b[0;33m("+str(streak)+"x)\x1b[0;0m")
 			else: 
 				print("\t"+alteredString)
 	def figureOutMessage(self,observations):
