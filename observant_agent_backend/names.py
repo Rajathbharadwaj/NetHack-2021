@@ -77,6 +77,35 @@ monsterNames = [
 	"SHYREN",
 	"TEMMIE",
 	"WOSHUA",
+	# Deltarune
+	"VESSEL",
+	"KRIS",
+	"RALSEI",
+	"LANCER",
+	"TOPCHEF",
+	"RUDINN",
+	"HATHY",
+	"PONMAN",
+	"JIGSAWRY",
+	"RABBICK",
+	"BLOXER",
+	"SEAM",
+	"MALIUS",
+	"JEVIL",
+	"ROUXLS",
+	"STARWALKER",
+	"NOELLE",
+	"BERDLY",
+	"ADDISON",
+	"MAUS",
+	"TASQUE",
+	"WEREWIRE",
+	"VIROVIROKUN",
+	"POPPUP",
+	"PIPIS", # 73249 liked that
+	"SWATCH",
+	"NUBERT",
+	"SPAMTON",
 	# Greek letters
 	"ALPHA",
 	"BETA",
@@ -84,23 +113,23 @@ monsterNames = [
 	"DELTA",
 	"EPSILON",
 	"ZETA",
-	"ETA",
+	# "ETA", # incompatible with multiple other greek letters
 	"THETA",
 	"IOTA",
 	"KAPPA",
 	"LAMBDA",
-	"MU",
+	# "MU", # incompatible with "MURDER"
 	"NU",
 	"XI",
 	"OMICRON",
 	# "PI", # incompatible with "PICO"
 	"RHO",
 	"SIGMA",
-	"TAU",
+	# "TAU", # incompatible with "TAURUS"
 	"UPSILON",
 	"PHI",
-	"CHI",
-	"PSI",
+	# "CHI", # incompatible with "PINNOCHIO"
+	# "PSI", # incompatible with "EPSILON"
 	"OMEGA",
 	# Baba is You
 	"BABA",
@@ -111,7 +140,7 @@ monsterNames = [
 	"ANNI",
 	"LEVEL",
 	"TEXT",
-	"ALL",
+	# "ALL", # incompatible with "MALLORY" and a couple others
 	# Friday Night Funkin'
 	"BOYFRIEND",
 	"GIRLFRIEND",
@@ -135,7 +164,7 @@ monsterNames = [
 	"DEIMOS",
 	# Among Us
 	"AMOGUS",
-	"SUS",
+	# "SUS", # incompatible with "RNGESUS"
 	"IMPOSTER",
 	"CREWMATE",
 	"BANANA",
@@ -155,7 +184,7 @@ monsterNames = [
 	"PURPLE",
 	"RED",
 	"ROSE",
-	"TAN",
+	# "TAN", # incompatible with "TANKMAN"
 	"WHITE",
 	"YELLOW",
 	# Kirby
@@ -184,6 +213,40 @@ monsterNames = [
 	"CAPRICORN",
 	"AQUARIUS",
 	"PISCES",
+	# Space
+	"SOLAR",
+	"MERCURY",
+	"VENUS",
+	"EARTH",
+	"MARS",
+	"JUPITER",
+	"SATURN",
+	"URANUS",
+	"NEPTUNE",
+	"PLUTO", # cope B)
+	"CENTAURI",
+	"MILKYWAY",
+	"PULSAR",
+	"QUASAR",
+	"EXOPLANET",
+	"EUROPA",
+	"LUNAR",
+	"GALAXY",
+	"HUBBLE",
+	"WEBBS",
+	"SINGULARITY",
+	"VACUUM",
+	"ROCKET",
+	"ASTEROID",
+	"METEOR",
+	"KUIPER",
+	"OORT",
+	"ASTRONAUT",
+	"SYZYGY",
+	"RADIATION",
+	"STELLAR",
+	"ENTROPY",
+	"HIGGS",
 	# Misc
 	"RUNKILLER",
 	"RNGESUS",
@@ -225,9 +288,15 @@ monsterNames = [
 	"PROSPERITY",
 	"VITALITY",
 	"LIFE",
-	"OP",
+	# "OP", # incompatible with "POPPUP"
 	"NERFED",
-	"SOCIETY"
+	"SOCIETY",
+	"YASD",
+	"DYWYPI",
+	"TDTTOE",
+	"MAUD",
+	"VLADSBANE",
+	"CHAINMAIL"
 ]
 
 monsterNameLen = len(monsterNames)
