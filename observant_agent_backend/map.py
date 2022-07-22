@@ -207,7 +207,9 @@ class Gazetteer(StateModule):
 			# Monster not detected, or if there is one we didn't recognize it
 			pass 
 		else:
-			if not isWorthFighting(self.state, observations, monster):
+			if not isWorthFighting(self.state, observations, monster) and endGlyph != 2383:
+				# Don't fight things that aren't worth fighting...
+				# ...unless they're on the stairs in which case we don't really have a choice
 				return False
 		
 		if ((endGlyph >= 2372 and endGlyph <= 2375) or (startGlyph >= 2372 and startGlyph <= 2375)) and isMovementDiagonal:

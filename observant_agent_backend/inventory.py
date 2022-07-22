@@ -39,7 +39,43 @@ class ItemManager(StateModule):
 		pass
 	def isWorthTaking(self, observations, itemStr):
 		# TODO
+		if itemStr.find("zorkmids)") != -1:
+			return False # don't bother with shops yet
 		if itemStr.find("food ration") != -1:
+			return True
+		if itemStr.find("lichen corpse") != -1:
+			return True
+		if itemStr.find("lembas wafer") != -1:
+			return True
+		if itemStr.find(" apple") != -1:
+			return True
+		if itemStr.find("carrot") != -1:
+			return True
+		if itemStr.find("slime mold") != -1:
+			return True
+		if itemStr.find("meatball") != -1:
+			return True
+		if itemStr.find("meat stick") != -1:
+			return True
+		if itemStr.find("orange") != -1:
+			return True
+		if itemStr.find(" pear") != -1:
+			return True
+		if itemStr.find("melon") != -1:
+			return True
+		if itemStr.find("banana") != -1:
+			return True
+		if itemStr.find("carrot") != -1:
+			return True
+		if itemStr.find("cream pie") != -1:
+			return True
+		if itemStr.find("fortune cookie") != -1:
+			return True
+		if itemStr.find("cram ration") != -1:
+			return True
+		if itemStr.find("C-ration") != -1:
+			return True
+		if itemStr.find("K-ration") != -1:
 			return True
 		return False
 	def itemDetected(self, itemStr):

@@ -4,6 +4,7 @@
 
 from abc import ABC, abstractmethod
 from .agent_config import *
+from .utilities import parse
 
 class StateModule(ABC):
 	# TODO - We probably should separate "print the obituary" and "reset yourself" into different functions
@@ -44,6 +45,11 @@ class Gamestate(object):
 			return
 		print("\x1b[0;31m",end="")
 		print(message, end="\n\x1b[0;0m")
+		print("")
+		if observations != None:
+			for x in range(len(observations["tty_chars"])):
+				print(parse(observations["tty_chars"][x]))
+		print("")
 		for key in self.modules:
 			self.modules[key].dumpCore()
 	def get(self,name):
