@@ -44,6 +44,16 @@ class ItemManager(StateModule):
 		return False
 	def itemDetected(self, itemStr):
 		self.itemUnderfoot = itemStr
+	def countUnderfoot(self, observations):
+		if observations["misc"][0] or observations["misc"][1] or observations["misc"][2]:
+			return -1 # wait for the dialogue box to be dismissed
+		self.phase += 1
+		if self.state.get("doctor").checkMajorStatus(nethack.BL_MASK_BLIND):
+			# If we're blind, near-look takes a turn, which is no bueno
+			return self.checkUnderfoot(observations)
+		# Re-assess how many items are underfoot
+		self.itemUnderfoot = ""
+		return 51 # near-look
 	def checkUnderfoot(self, observations):
 		self.notTaken = []
 		if observations["misc"][0] or observations["misc"][1] or observations["misc"][2]:
@@ -67,6 +77,7 @@ class ItemManager(StateModule):
 			return -1
 		self.phase += 1
 		return 61 # pickup
+		
 	def readUnderfoot(self, observations):
 		if readMessage(observations) != "":
 			# There is currently something underfoot if and only if the message is empty.
@@ -150,6 +161,7 @@ class ItemManager(StateModule):
 	def update(self, observations):
 		return self.agenda[self.phase](self,observations)
 	agenda = [
+		countUnderfoot,
 		checkUnderfoot,
 		readUnderfoot,
 		noop

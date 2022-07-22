@@ -55,6 +55,27 @@ class MessageSecretary(StateModule):
 			# not worth logging
 			return -1
 		
+		if message == "There is nothing here to pick up.":
+			# not worth logging
+			return -1
+		
+		if message == "You see no objects here.":
+			# not worth logging
+			return -1
+		
+		if message == "It won't come off the hinges.":
+			# not worth logging
+			return -1
+		
+		if message == "The stairs are solidly fixed to the floor.":
+			# not worth logging
+			return -1
+		
+		
+		if message == "There is nothing here to pick up.":
+			# not worth logging
+			return -1
+		
 		if message.find("This door is locked.") != -1:
 			self.state.get("map").poke(observations, "locked")
 		
@@ -75,6 +96,11 @@ class MessageSecretary(StateModule):
 		
 		if message.find("You read: \"") != -1:
 			self.state.get("map").poke(observations, "engraving")
+			
+		if message.find("being called names") != -1:
+			print(message)
+		if message.find("You would never recognize") != -1:
+			print(message)
 		
 		newPos = readHeroPos(observations)
 		if newPos != self.lastKnownPos:

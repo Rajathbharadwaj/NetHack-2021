@@ -22,7 +22,7 @@ def isWorthFighting(state, observations, monster):
 		# TODO: Check if we're blind, because if we're blind we're fine to hit it.
 		return False
 	
-	if glyph >= 156 and glyph <= 159:
+	if (glyph >= 156 and glyph <= 159) or glyph == 55 or glyph == 56:
 		# The molds are sessile and have painful passive counterattacks, so don't antagonize them
 		return False
 	
