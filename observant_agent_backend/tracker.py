@@ -72,6 +72,9 @@ class MonsterTracker(StateModule):
 	def readScreen(self, observations):
 		if parse(observations["tty_chars"][23])[:8] != "--More--":
 			self.phase += 1
+			if len(self.toName) >= 10 and not CONST_QUIET:
+				print("Whoawhoawhoa, that's a lot of new monsters. (",end="")
+				print(len(self.toName),end=")\n")
 			return self.agenda[self.phase](self,observations)
 		turn = readTurn(observations)
 		for x in range(len(observations["tty_chars"])):
@@ -161,9 +164,6 @@ class MonsterTracker(StateModule):
 				self.database[nameIndex].updatePos([row,col], observations)
 				self.database[nameIndex].hostility = stance
 				self.visibleMonsters[row,col] = self.database[nameIndex]
-		if len(self.toName) >= 10 and not CONST_QUIET:
-			print("Whoawhoawhoa, that's a lot of new monsters. (",end="")
-			print(len(self.toName),end=")\n")
 		return 19 # next page, please
 	def jotDownGlyphs(self, observations):
 		for x in self.visibleMonsters:

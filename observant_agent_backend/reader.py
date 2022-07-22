@@ -9,6 +9,7 @@ class MessageSecretary(StateModule):
 		self.log = []
 		self.state = state
 		self.phase = 0
+		self.lastKnownPos = [0, 0]
 	def reset(self): 
 		if not CONST_QUIET:
 			if len(self.log) == 0:
@@ -65,11 +66,43 @@ class MessageSecretary(StateModule):
 		if message.find("You are carrying too much to get through.") != -1:
 			self.state.get("map").poke(observations, "baddiag")
 		
+		if message.find("Your body is too large to fit through.") != -1:
+			self.state.get("map").poke(observations, "baddiag")
+		
 		if message.find("You try to move the boulder, but in vain.") != -1:
 			self.state.get("map").poke(observations, "badboulder")
 		
 		if message.find("You hear a monster behind the boulder.") != -1:
 			self.state.get("map").poke(observations, "blockedboulder")
+		
+		if message.find("You read: \"") != -1:
+			self.state.get("map").poke(observations, "engraving")
+		
+		newPos = readHeroPos(observations)
+		if newPos != self.lastKnownPos:
+			# We're on a new square, so anything that was underfoot before ain't underfoot anymore
+			self.state.get("inventory").itemDetected("")
+		self.lastKnownPos = newPos
+		
+		if message.find("You see here ") != -1:
+			# item underfoot
+			start = message.find("You see here ") + len("You see here ")
+			end = message.find(".",start)
+			if(end == -1):
+				print("\x1b[0;31mFatal error: A \"you see here\" message wasn't properly terminated...")
+				print(message)
+				exit(1)
+			self.state.get("inventory").itemDetected(message[start:end])
+		
+		if message.find("You feel here ") != -1:
+			# item underfoot
+			start = message.find("You feel here ") + len("You feel here ")
+			end = message.find(".",start)
+			if(end == -1):
+				print("\x1b[0;31mFatal error: A \"you feel here\" message wasn't properly terminated...")
+				print(message)
+				exit(1)
+			self.state.get("inventory").itemDetected(message[start:end])
 		
 		if observations["misc"][2]:
 			message += " --More--"

@@ -84,6 +84,8 @@ class StatusChecker(StateModule):
 		if self.lastKnownEncumbrance >= 5:
 			result.append("Overloading")
 		return result
+	def checkMajorStatus(self, status):
+		return self.lastKnownStatus & status
 	def fixUrgentProblems(self, observations):
 		# An urgent problem is defined as one which can't wait a few turns
 		# for you to kill a monster first. It might be something that

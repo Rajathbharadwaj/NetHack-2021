@@ -11,6 +11,7 @@ from .reader import read
 from .time import countStep
 from .combatTactics import meleeCombat
 from .doctor import checkup, fixMinorProblems, fixUrgentProblems
+from .inventory import checkUnderfoot, nabGoodies
 
 agenda = [] # populated at EOF (so all the functions are defined first)
 messages = []
@@ -105,6 +106,7 @@ def recordingDone(state, observations):
 	state.get("tracker").returnToTop()
 	state.get("map").returnToTop()
 	state.get("reader").returnToTop()
+	state.get("inventory").returnToTop()
 	state.get("time").updateTurns(readTurn(observations))
 	#state.get("time").incrementTurns()
 	stepsSinceLastAction[0] = 0
@@ -124,18 +126,22 @@ agenda = [
 	checkup,
 	scan,
 	checkPath,
+	checkUnderfoot,
 	# Check the engraving underfoot, verify whether or not you're standing on an ELBERETH
 	# ...Actually, maybe check for "closed for inventory" and "ad aerarium" too, come to think of it
 	advancePrompts,
+	
+	# Nothing above this point in the agenda is supposed to do anything that spends a turn.
 	recordingDone,
+	# Nothing below this point in the agenda is supposed to do anything that doesn't spend a turn.
+	
 	fixUrgentProblems,
 	# drop your gold if a guard instructs you to; antagonizing a guard tends to be YASD
 	# Consider using escape items if needed
 	# Pray if you're otherwise f'd
 	meleeCombat,
 	# Ranged combat
+	nabGoodies,
 	fixMinorProblems,
 	proceed
 ]
-
-# Get info on monsters: 93-54
