@@ -23,21 +23,19 @@ class MessageSecretary(StateModule):
 					print("Agent was a",firstMsg[identityPos+len("You are a "):])
 				print("Recent messages:")
 				for string, streak in self.log[-3:]:
-					alteredString = self.state.get("tracker").annotate(string)
 					if streak > 1:
-						print("\t"+alteredString+" \x1b[0;33m("+str(streak)+"x)\x1b[0;0m")
+						print("\t"+string+" \x1b[0;33m("+str(streak)+"x)\x1b[0;0m")
 					else: 
-						print("\t"+alteredString)
+						print("\t"+string)
 		self.log = []
 		self.phase = 0
 	def dumpCore(self):
 		print("Recent messages:")
 		for string, streak in self.log[-10:]:
-			alteredString = self.state.get("tracker").annotate(string)
 			if streak > 1:
-				print("\t"+alteredString+" \x1b[0;33m("+str(streak)+"x)\x1b[0;0m")
+				print("\t"+string+" \x1b[0;33m("+str(streak)+"x)\x1b[0;0m")
 			else: 
-				print("\t"+alteredString)
+				print("\t"+string)
 	def figureOutMessage(self,observations):
 		message = readMessage(observations)	
 		
@@ -103,6 +101,9 @@ class MessageSecretary(StateModule):
 				print(message)
 				exit(1)
 			self.state.get("inventory").itemDetected(message[start:end])
+			
+			
+		message = self.state.get("tracker").annotate(message)
 		
 		if observations["misc"][2]:
 			message += " --More--"
