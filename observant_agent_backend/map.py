@@ -114,69 +114,104 @@ class Gazetteer(StateModule):
 		self.phase += 1
 		return self.agenda[self.phase](self,observations)
 	
+	def openTerrainView(self, observations):
+		if observations["misc"][0] or observations["misc"][1] or observations["misc"][2]:
+			return -1 # Wait for the dialogue box to be closed
+		self.state.get("queue").append("te\nb") # command: Terrain (hide monsters and objects)
+		self.phase += 1
+		return 20 # extended command
+	
 	def assess(self, observations):
 		if observations["misc"][0] or observations["misc"][1] or observations["misc"][2]:
 			return -1 # Wait for the dialogue box to be closed
 		heroPos = readHeroPos(observations)
 		if self.route == None:
 			return -1 # We're screwed, panic
+		n = ""
+		routeRetooled = False	# If we try to make a new path twice in the same step, we must panic
+								# (because that means the pathfinding failed miserably and needs fixing)
+		
+		if readDungeonLevel(observations) != self.lastKnownFloor:
+			# We found ourselves on a new floor unexpectedly. Time to draw a new route.
+			self.newRoute(observations)
+			routeRetooled = True
+			n = "newRoute"
+			self.lastKnownFloor = readDungeonLevel(observations)
 		
 		if len(self.route) <= 1:
 			# We've reached the end of the current path. Time to draw a new one.
-			self.state.get("queue").append("te\nb") # command: Terrain (hide monsters and objects)
-			self.phase += 2
-			return 20 # extended command
+			if routeRetooled:
+				return self.routePanic(observations, "A")
+			self.newRoute(observations)
+			routeRetooled = True
+			n = "newRoute"
+			if len(self.route) <= 1:
+				return self.routePanic(observations, "B")
 		
-		if [heroPos[0],heroPos[1]] != self.route[0]:
+		if [heroPos[0], heroPos[1]] != self.route[0]:
 			# We're not where we thought we would be. Let's see how we can get back on track.
-			self.state.get("queue").append("te\nb") # command: Terrain (hide monsters and objects)
-			self.phase += 1
-			return 20 # extended command
+			if routeRetooled:
+				return self.routePanic(observations, "C")
+			self.repairRoute(observations)
+			routeRetooled = True
+			n = "repairRoute"
+			if len(self.route) <= 1:
+				return self.routePanic(observations, "D")
+			if [heroPos[0],heroPos[1]] != self.route[0]:
+				return self.routePanic(observations,"E")
 		
 		# TODO: Consider looking farther ahead
 		if not self.isMovementPossible(observations, self.route[0], self.route[1]):
 			# Something impeded our progress along this route. Let's try something else
 			
+			if routeRetooled:
+				return self.routePanic(observations,"F")
+			
 			self.route = self.route[1:] # Boot in the butt for the fixer-upper to get the memo that we want something ELSE
 			self.movements = self.movements[1:]
 			
-			self.state.get("queue").append("te\nb") # command: Terrain (hide monsters and objects)
-			self.phase += 1
-			return 20 # extended command
-		
-		if readDungeonLevel(observations) != self.lastKnownFloor:
-			# We found ourselves on a new floor unexpectedly. Time to draw a new route.
-			self.state.get("queue").append("te\nb") # command: Terrain (hide monsters and objects)
-			self.phase += 2
-			self.lastKnownFloor = readDungeonLevel(observations)
-			return 20 # extended command
+			self.repairRoute(observations)
+			routeRetooled = True
+			n = "repairRoute"
+			
+			if len(self.route) <= 1:
+				return self.routePanic(observations,"G")
+			if [heroPos[0],heroPos[1]] != self.route[0]:
+				return self.routePanic(observations,"H")
+			if not self.isMovementPossible(observations, self.route[0], self.route[1]):
+				return self.routePanic(observations,"I")
 		# We're good to go.
+		self.phase += 1
+		return 38 # escape (exit out of terrain view)
+	
+	def noop(self, observations):
+		# Route has already been checked, no further action is necessary
 		return -1
 	
 	def repairRoute(self, observations):
 		self.movements, self.route = pathfindFixUp(self, observations, self.movements, self.route)
 		if self.movements == None:
 			# Well, that didn't work. Time to construct a new route.
-			self.phase += 1
-			return self.agenda[self.phase](self,observations)
-		self.returnToTop()
-		self.phase += 1
-		return 38 # escape (close out terrain view)
+			self.newRoute(observations)
+			return
+		if self.movements == []:
+			# I guess we accidentally wound up at our destination? Funny that. Welp, let's make a new route then.
+			self.newRoute(observations)
+			return
 	
 	def newRoute(self, observations):
 		self.movements, self.route = self.modeAlgorithms[self.mode](self, observations)
 		if self.route == [] and self.movements == [] and self.mode == "std":
-			self.state.get("queue").append(17) # go down the stairs
-			return 38 # escape (close out terrain view)
-		self.returnToTop()
-		self.phase += 1
-		return 38 # escape (close out terrain view)
+			heroPos = [readHeroPos(observations)[0], readHeroPos(observations)[1]]
+			self.route.append(heroPos)
+			self.route.append(heroPos)
+			self.movements.append(17) # go down the stairs
 	
 	agenda = [
 		watchVicinity,
+		openTerrainView,
 		assess,
-		repairRoute,
-		newRoute
+		noop
 	]
 	
 	def isMovementPossible(self, observations, start, end):
@@ -207,7 +242,7 @@ class Gazetteer(StateModule):
 			# Monster not detected, or if there is one we didn't recognize it
 			pass 
 		else:
-			if not isWorthFighting(self.state, observations, monster) and endGlyph != 2383:
+			if not isWorthFighting(self.state, observations, monster) and endGlyph != 2383: # FIXME
 				# Don't fight things that aren't worth fighting...
 				# ...unless they're on the stairs in which case we don't really have a choice
 				return False
@@ -374,7 +409,7 @@ class Gazetteer(StateModule):
 		# vvv Responses to pokes vvv
 		if pokeType == "locked":
 			if len(self.route) == 0:
-				self.state.dumpCore("The agent wasn't going anywhere. How'd we hit a locked door...?")
+				self.state.dumpCore("The agent wasn't going anywhere. How'd we hit a locked door...?", observations)
 				exit(1)
 			r, c = self.route[0]
 			self.addTagObs("locked", r, c, observations)
@@ -382,7 +417,7 @@ class Gazetteer(StateModule):
 		
 		if pokeType == "badboulder" or pokeType == "blockedboulder":
 			if len(self.route) == 0:
-				self.state.dumpCore("The agent wasn't going anywhere. How'd we hit a boulder...?")
+				self.state.dumpCore("The agent wasn't going anywhere. How'd we hit a boulder...?", observations)
 				exit(1)
 			r, c = self.route[0]
 			xpos, ypos = readHeroPos(observations)
@@ -398,6 +433,13 @@ class Gazetteer(StateModule):
 		
 		if not pokeType in self.unhandledPokes:
 			self.unhandledPokes.append(pokeType)
+		
+	def routePanic(self, observations, errorCode):
+		message = "Agent has panicked! (Pathfinding failed miserably with error code " + errorCode + ".)"
+		self.state.dumpCore(message, observations)
+		self.state.get("queue").append(7)
+		self.state.get("queue").append(65)
+		return 38 # Escape out of whatever we were doing, quit, and then next step, answer yes to "are you sure?"
 
 
 def checkPath(state, observations):

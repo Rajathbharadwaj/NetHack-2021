@@ -132,7 +132,12 @@ class ItemManager(StateModule):
 		if offset == -1:
 			print("\x1b[0;31mFatal error: Picking up stuff produced the wrong popup...")
 			print(display[0])
-			exit(1)
+			print(display[1])
+			print(display[2])
+			self.state.dumpCore("",observations)
+			self.state.get("queue").append(65)
+			self.state.get("queue").append(7)
+			return 19 # close the menu
 		for entry in display:
 			if entry[offset:].find("(end)") != -1:
 				self.phase += 1
@@ -152,7 +157,7 @@ class ItemManager(StateModule):
 					self.phase += 1
 					print("WOW that's a lotta goodies...")
 					return 19 # close the menu
-				self.itemsToNab.append(">")
+				self.itemsToNab += ">"
 				return 17 # next page, please
 			if entry[offset+1:offset+4] != " - ":
 				# empty line or category marker or something, not an item

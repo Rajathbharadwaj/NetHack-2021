@@ -36,7 +36,7 @@ def pathfindFixUp(gazetteer, observations, prevActions, prevRoute):
 		distance.append(distance[0].copy())
 	queue = [[heroRow,heroCol]]
 	
-	route[heroRow][heroCol] = []
+	route[heroRow][heroCol] = [[heroRow, heroCol]]
 	actions[heroRow][heroCol] = []
 	
 	while len(queue) > 0:
@@ -65,7 +65,7 @@ def pathfindFixUp(gazetteer, observations, prevActions, prevRoute):
 				else:
 					# Aha, back on track.
 					finalActions = actions[row][col] + [x] + prevActions[index:]
-					finalRoute = route[row][col] + [[row,col]] + prevRoute[index:]
+					finalRoute = route[row][col] + prevRoute[index:]
 					return finalActions, finalRoute
 	return None, None
 

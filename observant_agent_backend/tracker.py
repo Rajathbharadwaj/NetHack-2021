@@ -87,6 +87,9 @@ class MonsterTracker(StateModule):
 				continue # Don't bother trying to name something you can't see
 			desc = string[close+6:]
 			
+			if desc.find("unknown creature causing you ") != -1:
+				continue # Don't bother trying to name paranoid delusions
+			
 			calledIndex = desc.find(" called ")
 			
 			needsName = False
@@ -180,6 +183,12 @@ class MonsterTracker(StateModule):
 		self.state.get("queue").append("m") # "What do you want to name?" -> A monster
 		return 27
 	def moveCursor(self, observations):
+		self.state.get("time").askForMoreTime(10)
+			# There are occasions where you see a LOT of new monsters at once, many far away.
+			# It's not totally ridiculous to imagine that naming them might take 1000+ steps.
+			# So, we'll lax the 1000 step rule countdown during the naming process.
+			# We can't be *too* lax with it though, because the 10000 step rule is non-negotiatble.
+		
 		cursorPos = readCursorPos(observations)
 		targetPos = self.toName[0]
 		# Move cursor to the coordinates of targetPos

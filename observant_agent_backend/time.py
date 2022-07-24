@@ -42,9 +42,16 @@ class Stopwatch(StateModule):
 			self.state.dumpCore("Agent has panicked! (1000 steps passed planning for one turn.)",observations)
 			self.state.get("queue").cutInLine(7)
 			self.state.get("queue").cutInLine(65)
+			self.state.get("queue").cutInLine(38)
 			self.alreadyPanicked = True
 			return 38 # Escape out of whatever we were doing, quit, and then next step, answer yes to "are you sure?"
+				# (We have to hit escape twice to be sure. If we're halfway through a naming prompt,
+				# pressing escape once merely clears the prompt, and then the 65 press prints an illegible character to screen,
+				# which causes the entire program to die. Not what we want.)
 		return -1
+	def askForMoreTime(self, amount):
+		# Forestalls the 1000-rule panic.
+		self.stepsThisTurn -= amount
 
 def countStep(state, observations):
 	return state.get("time").nextStep(observations)
