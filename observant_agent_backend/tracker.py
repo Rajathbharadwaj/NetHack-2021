@@ -202,6 +202,11 @@ class MonsterTracker(StateModule):
 			return 1
 		# Cursor in correct place; input name
 		name = self.getNewName()
+		if name == None:
+			self.state.dumpCore("Agent has panicked! (Reserve of monster names depleted.)",observations)
+			self.state.get("queue").append(65)
+			self.state.get("queue").append(7)
+			return 38
 		self.database[self.lookup[name]].hostility = self.stances[0]
 		self.database[self.lookup[name]].updatePos(targetPos, observations)
 		self.database[self.lookup[name]].setGlyph(observations["glyphs"][targetPos[0]][targetPos[1]])
@@ -228,8 +233,7 @@ class MonsterTracker(StateModule):
 		else:
 			# We could try to dip into the reserved names to survive, I guess
 			# But I'd just as soon fail transparently
-			print("Fatal error: We're out of names! Please add more to names.py.")
-			exit(1)
+			return None
 	def tattle(self, row, col):
 		# Named for the skill in Paper Mario 64 and Paper Mario: The Thousand Year Door
 		# You point to a monster and ask for more information about it

@@ -179,7 +179,7 @@ class ItemManager(StateModule):
 	def nabGoodies(self, observations):
 		if self.itemUnderfoot != "":
 			if self.isWorthTaking(observations, self.itemUnderfoot):
-				print("Let's nab that.")
+				#print("Let's nab that.")
 				self.itemUnderfoot = ""
 				return 61 # pickup
 			return -1 # not worth bothering with
@@ -196,7 +196,7 @@ class ItemManager(StateModule):
 				# After picking up this stuff, there will be exactly 1 item stack left.
 				# We need to take note of this so we don't pick it up immediately afterwards by mistake...
 				self.itemUnderfoot = self.notTaken[0]
-			print("Let's nab at least one thing here.")
+			#print("Let's nab at least one thing here.")
 			return 61 # pickup
 		return -1 # nothing worthwhile underfoot
 	def update(self, observations):

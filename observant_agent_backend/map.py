@@ -126,7 +126,8 @@ class Gazetteer(StateModule):
 			return -1 # Wait for the dialogue box to be closed
 		heroPos = readHeroPos(observations)
 		if self.route == None:
-			return -1 # We're screwed, panic
+			# we're screwed, panic
+			return self.routePanic(observations, "1")
 		n = ""
 		routeRetooled = False	# If we try to make a new path twice in the same step, we must panic
 								# (because that means the pathfinding failed miserably and needs fixing)
@@ -222,7 +223,7 @@ class Gazetteer(StateModule):
 			return False
 		startGlyph = self.readSquare(observations, start[0], start[1])
 		endGlyph = self.readSquare(observations, end[0], end[1])
-		isMovementDiagonal = (start[0] != end[0] and start[0] != end[0])
+		isMovementDiagonal = (start[0] != end[0] and start[1] != end[1])
 		if (endGlyph >= 2360 and endGlyph <= 2370) or endGlyph == 2376 or endGlyph == 2377:
 			# terrain is impassible
 			return False
@@ -242,6 +243,8 @@ class Gazetteer(StateModule):
 			# Monster not detected, or if there is one we didn't recognize it
 			pass 
 		else:
+			if monster.hostility == -1:
+				return True # We can safely displace pets to get past them
 			if not isWorthFighting(self.state, observations, monster) and endGlyph != 2383: # FIXME
 				# Don't fight things that aren't worth fighting...
 				# ...unless they're on the stairs in which case we don't really have a choice
@@ -285,6 +288,12 @@ class Gazetteer(StateModule):
 		self.steps += 1
 		if self.mode == "dsp":
 			self.dspSteps += 1
+		if type(nextMovement) == list:
+			firstMovement = nextMovement[0]
+			nextMovement = nextMovement[1:]
+			for x in nextMovement:
+				self.state.get("queue").append(x)
+			return firstMovement
 		if nextMovement == 75: # search
 			self.updateSearchMap(observations)
 		return nextMovement
@@ -334,7 +343,7 @@ class Gazetteer(StateModule):
 		self.mode = newMode
 		if isUrgent:
 			# isUrgent means we throw our current route in the trash and redraw it in the new mode.
-			# (Otherwise, we' finish following the path and then factor in the new mode.)
+			# (Otherwise, we finish following the path and then factor in the new mode.)
 			self.movements = []
 			self.route = []
 	

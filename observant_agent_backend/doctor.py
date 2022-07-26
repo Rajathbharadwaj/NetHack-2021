@@ -14,6 +14,7 @@ class StatusChecker(StateModule):
 		self.lastKnownHunger = 0
 		self.lastKnownEncumbrance = 0
 		self.state = state
+		self.printedSituation = False
 	def reset(self): 
 		if not CONST_QUIET:
 			status = self.reportStatus()
@@ -23,6 +24,7 @@ class StatusChecker(StateModule):
 		self.lastKnownStatus = 0
 		self.lastKnownHunger = 0
 		self.lastKnownEncumbrance = 0
+		self.printedSituation = False
 	def dumpCore(self):
 		status = self.reportStatus()
 		if not len(status) == 0:
@@ -31,6 +33,11 @@ class StatusChecker(StateModule):
 		self.lastKnownStatus = observations["blstats"][nethack.NLE_BL_CONDITION]
 		self.lastKnownHunger = observations["blstats"][nethack.NLE_BL_HUNGER]
 		self.lastKnownEncumbrance = observations["blstats"][nethack.NLE_BL_CAP]
+		
+		#if (not self.printedSituation) and self.lastKnownHunger >= 4:
+		#	self.printedSituation = True
+		#	printScreen(observations)
+		
 		return -1
 	def logAilment(self, ailment):
 		if(not ailment in self.currentAilments):
@@ -79,7 +86,7 @@ class StatusChecker(StateModule):
 			result.append("Stress")
 		if self.lastKnownEncumbrance == 3:
 			result.append("Strain")
-		if self.lastKnownEncumbrance >= 4:
+		if self.lastKnownEncumbrance == 4:
 			result.append("Overtaxing")
 		if self.lastKnownEncumbrance >= 5:
 			result.append("Overloading")

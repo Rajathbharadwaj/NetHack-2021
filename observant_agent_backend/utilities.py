@@ -241,3 +241,9 @@ def readHeroStatus(observations, statusToCheck):
 def readInventoryGlyph(state, observations, index):
 	# TODO: Account for hallucination
 	return observations["inv_glyphs"][index]
+
+def printScreen(observations):
+	print("")
+	for x in range(len(observations["tty_chars"])):
+		print(parse(observations["tty_chars"][x]))
+	print("")
