@@ -34,3 +34,7 @@ class ObservantAgent(BatchedAgent):
     def reset(self):
         for x in range(self.num_envs):
             self.state[x].reset()
+    
+    def displayStats(self):
+        for x in range(self.num_envs):
+            self.state[x].displayStats()

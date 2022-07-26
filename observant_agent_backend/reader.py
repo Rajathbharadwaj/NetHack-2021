@@ -36,6 +36,9 @@ class MessageSecretary(StateModule):
 				print("\t"+string+" \x1b[0;33m("+str(streak)+"x)\x1b[0;0m")
 			else: 
 				print("\t"+string)
+				
+	def displayStats(self):
+		pass
 	def figureOutMessage(self,observations):
 		message = readMessage(observations)	
 		

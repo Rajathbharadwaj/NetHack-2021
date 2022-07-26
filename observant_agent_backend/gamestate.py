@@ -16,6 +16,9 @@ class StateModule(ABC):
 	@abstractmethod
 	def dumpCore(self,observations):
 		pass
+	@abstractmethod
+	def displayStats(self):
+		pass
 
 class Gamestate(object):
 	def __init__(self):
@@ -52,3 +55,6 @@ class Gamestate(object):
 	def get(self,name):
 		# Returns a reference to a module
 		return self.modules[name]
+	def displayStats(self):
+		for key in self.modules:
+			self.modules[key].displayStats()

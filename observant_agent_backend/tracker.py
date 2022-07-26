@@ -41,10 +41,19 @@ class MonsterTracker(StateModule):
 		self.stances = [] # parallel array to toName; note whether a newly-spotted monster is hostile
 		self.state = state
 		self.visibleMonsters = {}
+		
+		self.stats_runs = 0
+		self.stats_names = 0
+		self.stats_monsters = 0
 	def reset(self):
 		if not CONST_QUIET:
 			print(self.nextOpenName,"names assigned to monsters.")
 			print(len(self.visibleMonsters),"monsters visible when the agent died.")
+			
+		self.stats_runs += 1
+		self.stats_names += self.nextOpenName
+		self.stats_monsters += len(self.visibleMonsters)
+		
 		self.names = self.names[:len(monsterNames)]
 		random.shuffle(self.names)
 		self.names += reservedNames
@@ -59,6 +68,10 @@ class MonsterTracker(StateModule):
 		self.visibleMonsters = {}
 	def dumpCore(self):
 		pass
+	def displayStats(self):
+		print("Average number of names assigned:",(self.stats_names / self.stats_runs))
+		print("Average number of monsters visible at death:",(self.stats_monsters / self.stats_runs))
+
 	def update(self, observations):
 		return self.agenda[self.phase](self,observations)
 	

@@ -15,11 +15,19 @@ class StatusChecker(StateModule):
 		self.lastKnownEncumbrance = 0
 		self.state = state
 		self.printedSituation = False
+		
+		self.stats_runs = 0
+		self.stats_starves = 0
 	def reset(self): 
 		if not CONST_QUIET:
 			status = self.reportStatus()
 			if not len(status) == 0:
 				print("Status at death: ",self.reportStatus())
+		
+		self.stats_runs += 1
+		if self.lastKnownHunger >= 4:
+			self.stats_starves += 1
+		
 		self.currentAilments = []
 		self.lastKnownStatus = 0
 		self.lastKnownHunger = 0
@@ -28,15 +36,18 @@ class StatusChecker(StateModule):
 	def dumpCore(self):
 		status = self.reportStatus()
 		if not len(status) == 0:
-			print("Status at death: ",self.reportStatus())
+			print("Status at death: ",self.reportStatus())			
+	def displayStats(self):
+		print("Proportion of runs ending in starvation:",(self.stats_starves / self.stats_runs))
+
 	def recordStatus(self, observations):
 		self.lastKnownStatus = observations["blstats"][nethack.NLE_BL_CONDITION]
 		self.lastKnownHunger = observations["blstats"][nethack.NLE_BL_HUNGER]
 		self.lastKnownEncumbrance = observations["blstats"][nethack.NLE_BL_CAP]
 		
-		#if (not self.printedSituation) and self.lastKnownHunger >= 4:
-		#	self.printedSituation = True
-		#	printScreen(observations)
+		if (not self.printedSituation) and self.lastKnownHunger >= 4:
+			self.printedSituation = True
+			printScreen(observations)
 		
 		return -1
 	def logAilment(self, ailment):

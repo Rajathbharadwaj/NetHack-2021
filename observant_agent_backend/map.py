@@ -37,6 +37,14 @@ class Gazetteer(StateModule):
 		self.dspSteps = 0
 		self.isEncumbered = False # TODO: Move to status tracker or inventory tracker once either of those exist
 		
+		self.stats_runs = 0
+		self.stats_floors = 0
+		self.stats_badRuns = 0
+		self.stats_midRuns = 0
+		self.stats_decentRuns = 0
+		self.stats_goodRuns = 0
+		self.stats_greatRuns = 0
+		
 	def reset(self):
 		if not CONST_QUIET:
 			if(self.lastKnownFloor+1 >= 10):
@@ -66,6 +74,20 @@ class Gazetteer(StateModule):
 			if len(self.unhandledPokes) > 0:
 				print("\x1b[0;33mUnhandled pokes: ",end="")
 				print(self.unhandledPokes,"\x1b[0;0m")
+		
+		self.stats_runs += 1
+		self.stats_floors += self.lastKnownFloor+1
+		if self.lastKnownFloor <= 1:
+			self.stats_badRuns += 1
+		if self.lastKnownFloor > 1 and self.lastKnownFloor <= 3:
+			self.stats_midRuns += 1
+		if self.lastKnownFloor > 3 and self.lastKnownFloor <= 5:
+			self.stats_decentRuns += 1
+		if self.lastKnownFloor > 5 and self.lastKnownFloor <= 8:
+			self.stats_goodRuns += 1
+		if self.lastKnownFloor > 8:
+			self.stats_greatRuns += 1
+		
 		self.route = []
 		self.movements = []
 		self.phase = 0
@@ -91,6 +113,14 @@ class Gazetteer(StateModule):
 		if len(self.route) > 0:
 			print("Agent was on a",len(self.route),"step path to ",end="")
 			print(self.route[-1],end=".\n")
+			
+	def displayStats(self):
+		print("Average floor reached:",(self.stats_floors / self.stats_runs))
+		print("Proportion of runs ending on floor 1-2:",(self.stats_badRuns/self.stats_runs))
+		print("Proportion of runs ending on floor 3-4:",(self.stats_midRuns/self.stats_runs))
+		print("Proportion of runs ending on floor 5-6:",(self.stats_decentRuns/self.stats_runs))
+		print("Proportion of runs ending on floor 7-8:",(self.stats_goodRuns/self.stats_runs))
+		print("Proportion of runs ending on floor  9+:",(self.stats_greatRuns/self.stats_runs))
 			
 	def returnToTop(self):
 		self.phase = 0

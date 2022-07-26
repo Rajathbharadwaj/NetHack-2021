@@ -11,12 +11,21 @@ class Stopwatch(StateModule):
 		self.lastKnownTurn = 1
 		self.stepsThisTurn = 0
 		self.state = state
-		self.alreadyPanicked = False
+		self.alreadyPanicked = False		
+		self.stats_runs = 0
+		self.stats_steps = 0
+		self.stats_turns = 0
+		self.stats_speed = 0
 	def reset(self):
 		currTime = time.clock_gettime(time.CLOCK_UPTIME_RAW)
 		Hz = self.lastKnownTurn / (currTime - self.startTime)
 		if not CONST_QUIET:
 			print(self.lastKnownTurn,"turns taken at",Hz,"Hz.")
+		
+		self.stats_runs += 1
+		self.stats_turns += self.lastKnownTurn
+		self.stats_speed += Hz
+		
 		self.startTime = currTime
 		self.lastKnownTurn = 1
 		self.stepsThisTurn = 0
@@ -25,6 +34,12 @@ class Stopwatch(StateModule):
 			print(self.stepsThisTurn,"steps taken this turn.")
 	def dumpCore(self):
 		pass
+	def displayStats(self):
+		print("Average steps per run:",(self.stats_steps/self.stats_runs))
+		print("Average turns per run:",(self.stats_turns/self.stats_runs))
+		print("Average steps per turn:",(self.stats_steps/self.stats_turns))
+		print("Average processing speed:",(self.stats_speed/self.stats_runs),"Hz")
+
 	def updateTurns(self, turns):
 		if self.lastKnownTurn != turns:
 			self.stepsThisTurn = 0
@@ -34,6 +49,7 @@ class Stopwatch(StateModule):
 		self.stepsThisTurn = 0
 	def nextStep(self,observations):
 		self.stepsThisTurn += 1
+		self.stats_steps += 1
 		if self.stepsThisTurn >= 900:
 			x = 1
 		if self.stepsThisTurn >= 1000 and not self.alreadyPanicked:

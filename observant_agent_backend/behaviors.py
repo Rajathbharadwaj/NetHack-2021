@@ -62,6 +62,9 @@ class ActionQueue(StateModule):
 		else:
 			print("Agent had intended to take the following actions: ",end="")
 			print(self.queue)
+			
+	def displayStats(self):
+		pass
 	def append(self, item):
 		if type(item) == list:
 			for x in item:

@@ -21,6 +21,8 @@ class ItemManager(StateModule):
 		self.phase = 0
 	def dumpCore(self):
 		pass
+	def displayStats(self):
+		pass
 	def reachForItem(self, observations, desired):
 		# Look in the inventory for an item whose glyph number is one of the ones in desired
 		# If one or more is found, report their inventory slots and which glyph they are
@@ -130,6 +132,9 @@ class ItemManager(StateModule):
 			display.append(parse(rawDisplay[x]))
 		offset = display[0].find("Pick up what?")
 		if offset == -1:
+			print("Evaluating page of items beyond 1.")
+			offset = display[0].find(" - ") - 1
+		if offset == -1:
 			print("\x1b[0;31mFatal error: Picking up stuff produced the wrong popup...")
 			print(display[0])
 			print(display[1])
@@ -142,7 +147,7 @@ class ItemManager(StateModule):
 			if entry[offset:].find("(end)") != -1:
 				self.phase += 1
 				return 19 # close the menu
-			if entry[offset:].find("(10 of ") != -1:
+			if entry[offset:].find("(10 of ") != -1: # FIXME
 				print("\x1b[0;31mFatal error: Your lazy hack has failed you.")
 				print("Go to readUnderfoot in inventory.py and implement it properly,")
 				print("without relying on there only being single-digit page numbers.")
