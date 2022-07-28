@@ -111,6 +111,15 @@ class StatusChecker(StateModule):
 		# kill you by the time you're done.
 		
 		# Other problems go in fixMinorProblems above.
+		hp, max = readHeroHealth(observations)
+		if(hp <= 4 or max / hp >= 4):
+			desired = ["potion of healing","potion of extra healing","potion of full healing"]
+			desired += ["potions of healing","potions of extra healing","potions of full healing"]
+			letters, types, indices = self.state.get("inventory").reachForString(observations, desired)
+			if(len(letters) > 0):
+				self.state.get("queue").append(False)
+				self.state.get("queue").append(parse([letters[0]]))
+				return 64 # quaff
 		if self.lastKnownHunger >= 3 and self.lastKnownEncumbrance < 4:
 			letters, types, indices = self.state.get("inventory").reachForItem(observations, permafood)
 			if(len(letters) > 0):

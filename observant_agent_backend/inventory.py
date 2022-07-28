@@ -36,6 +36,19 @@ class ItemManager(StateModule):
 					types.append(y)
 					indices.append(x)
 		return letters, types, indices
+	def reachForString(self, observations, desired):
+		# Look in the inventory for an item whose description contains a substring in desired
+		# If one or more is found, report their inventory slots and which glyph they are
+		letters = []
+		types = []
+		indices = []
+		for x in range(len(observations["inv_strs"])):
+			for y in desired:
+				if readInventoryStrs(self.state, observations, x).find(y) != -1:
+					letters.append(observations["inv_letters"][x])
+					types.append(y)
+					indices.append(x)
+		return letters, types, indices
 	def itemValue(self, observations, itemStr):
 		# TODO
 		pass
@@ -157,7 +170,7 @@ class ItemManager(StateModule):
 			if entry[offset+2:offset+6] == " of ":
 				# We've reached a (# of #) marker. This is the end of the page.
 				# This is the part you need to change if you ever find 10 pages of items on 1 square.
-				if entry[offset+1] == entry[offset+5]:
+				if entry[offset+1] == entry[offset+6]:
 					# Last page. This is the real end of the items.
 					self.phase += 1
 					print("WOW that's a lotta goodies...")

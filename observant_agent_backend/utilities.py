@@ -242,8 +242,16 @@ def readInventoryGlyph(state, observations, index):
 	# TODO: Account for hallucination
 	return observations["inv_glyphs"][index]
 
+def readInventoryStrs(state, observations, index):
+	return parse(observations["inv_strs"][index])
+
 def printScreen(observations):
 	print("")
 	for x in range(len(observations["tty_chars"])):
 		print(parse(observations["tty_chars"][x]))
 	print("")
+
+def readHeroHealth(observations):
+	hp = observations["blstats"][nethack.NLE_BL_HP]
+	max = observations["blstats"][nethack.NLE_BL_HPMAX]
+	return hp, max
